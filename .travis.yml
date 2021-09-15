@@ -6,6 +6,7 @@ pandoc: false
 latex: false
 
 r_packages:
+    - utils
     - rstan
     - roxygen2
     
