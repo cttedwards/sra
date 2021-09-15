@@ -1,5 +1,6 @@
 #' @title Extract and compile sra model 
 #'
+#' @importFrom utils packageVersion
 #' @importFrom rstan stan_model
 #' @export
 sra <- function() {
