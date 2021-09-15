@@ -3,7 +3,7 @@ os: linux
 warnings_are_errors: false
 cache: packages
 pandoc: true
-latex: false
+latex: true
 
 r_packages:
     - utils
