@@ -1,0 +1,32 @@
+language: r
+os: linux
+warnings_are_errors: false
+cache: packages
+pandoc: false
+latex: false
+
+r_packages:
+    - rstan
+    - roxygen2
+    
+r_github_packages:
+  - cttedwards/sraInputs
+
+apt_packages:
+  - libudunits2-dev
+  - libgdal-dev
+  - libgeos-dev
+  - libproj-dev
+  - libv8-dev
+  
+script:
+    - R CMD build .
+
+repos:
+  CRAN: https://cran.rstudio.com
+
+notifications:
+  slack:
+    rooms:
+    - cescape:nDRQK01fllwqCeavOIkiYSDn#srainputs
+

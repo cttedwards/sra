@@ -1,0 +1,45 @@
+---
+title: "Update version"
+author: "Charles T T Edwards (Wellington, New Zealand)"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    fig_caption: yes
+    toc: no
+vignette: >
+  %\VignetteIndexEntry{version_update}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE}
+# Get Version and date
+VERSION <- scan('../DESCRIPTION',what = character(),skip = 3,nlines = 1)[2]
+DATE    <- Sys.Date()
+TIME    <- Sys.time()
+
+# increment development version
+VERSION <- paste(substr(VERSION, start = 1, stop = 4), as.numeric(substr(VERSION, start = 5, stop = 5)) + 1, sep = '')
+
+# update DESCRIPTION
+DESCRIPTION    <- readLines('../DESCRIPTION')
+DESCRIPTION[4] <- paste('Version:', VERSION)
+DESCRIPTION[5] <- paste('Date:', DATE)
+writeLines(DESCRIPTION, '../DESCRIPTION')
+rm(DESCRIPTION)
+
+# Write .onAttach
+filename <- "../R/zzz.R"
+cat(".onAttach <- function(libname, pkgname)\n", file = filename)
+cat("{\n", file = filename, append = TRUE)
+cat(paste("    packageStartupMessage(\"sra version ", VERSION, " (", TIME, ")\")\n", sep = ""), file = filename, append = TRUE)
+cat("}\n", file = filename, append = TRUE)
+rm(filename)
+```
+
+This is `sra` package version `r VERSION`.
+
+```{r, echo = FALSE}
+# document package
+roxygen2::roxygenise("..")
+```
