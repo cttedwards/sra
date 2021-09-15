@@ -20,5 +20,6 @@ Suggests:
     formatR (>= 1.00),
     reshape2 (>= 1.4.0)
 Collate: 
+    'sra.R'
     'zzz.R'
 RoxygenNote: 7.1.1
