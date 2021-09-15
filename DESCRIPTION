@@ -15,11 +15,7 @@ Depends:
 Suggests:
     markdown,
     rmarkdown (>= 2.6),
-    knitr (>= 1.31),
-    ggplot2 (>= 3.3.3),
-    dplyr (>= 1.0.7),
-    formatR (>= 1.00),
-    reshape2 (>= 1.4.0)
+    knitr (>= 1.31)
 Collate: 
     'sra.R'
     'zzz.R'
