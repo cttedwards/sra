@@ -22,6 +22,7 @@ apt_packages:
   
 script:
     - R CMD build .
+    - R CMD check .
 
 repos:
   CRAN: https://cran.rstudio.com
