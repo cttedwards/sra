@@ -2,7 +2,7 @@ language: r
 os: linux
 warnings_are_errors: false
 cache: packages
-pandoc: false
+pandoc: true
 latex: false
 
 r_packages:
