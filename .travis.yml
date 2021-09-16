@@ -12,6 +12,7 @@ r_packages:
     
 r_github_packages:
   - cttedwards/sraInputs
+  - cttedwards/sraInputsBio
 
 apt_packages:
   - libudunits2-dev
