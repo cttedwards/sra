@@ -15,8 +15,10 @@ Depends:
 Suggests:
     markdown,
     rmarkdown (>= 2.6),
-    knitr (>= 1.31)
+    knitr (>= 1.31),
+    testthat (>= 3.0.0)
 Collate: 
     'sra.R'
     'zzz.R'
 RoxygenNote: 7.1.1
+Config/testthat/edition: 3
