@@ -8,6 +8,7 @@ latex: true
 r_packages:
     - utils
     - rstan
+    - testthat
     - roxygen2
     
 r_github_packages:
