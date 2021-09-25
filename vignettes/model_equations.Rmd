@@ -1,0 +1,219 @@
+---
+title: "Model equations for the SEFRA seabird model"
+author: "Charles Edwards, Tom Peatman, Dave Goad, Darcy Webber"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  pdf_document:
+    toc: false
+    keep_tex: false
+    number_sections: false
+    citation_package: natbib
+vignette: >
+  %\VignetteIndexEntry{model_equations}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+header-includes: 
+  \usepackage{booktabs}
+  \usepackage{lmodern}
+  \renewcommand{\familydefault}{\sfdefault}
+  \usepackage{sansmath}
+  \sansmath
+  \linespread{1.2}
+bibliography: lib.bib
+biblio-style: apa
+---
+
+```{r, echo = FALSE, results = 'hide', message = FALSE, warning = FALSE}
+# Get Version and date
+VERSION <- scan('../DESCRIPTION',what = character(),skip = 3,nlines = 1)[2]
+DATE    <- Sys.Date()
+
+# Write .onAttach
+filename <- "../R/zzz.R"
+cat(".onAttach <- function(libname, pkgname)\n", file = filename)
+cat("{\n", file = filename, append = TRUE)
+cat(paste("    packageStartupMessage(\"sra version ", VERSION, " (", DATE, ")\")\n", sep = ""), file = filename, append = TRUE)
+cat("}\n", file = filename, append = TRUE)
+rm(filename)
+
+# document package
+roxygen2::roxygenise("..")
+```
+
+\begin{filecontents}{lib.bib}
+@Misc{stan2021,
+    title = {{RStan}: the {R} interface to {Stan}},
+    author = {{Stan Development Team}},
+    note = {R package version 2.21.2},
+    year = {2020},
+    url = {http://mc-stan.org/},
+}
+@article{aebar2017,
+    title = {{Spatially Explicit Fisheries Risk Assessment (SEFRA), Chapter 3, Aquatic Environment and Biodiversity Annual Review}},
+    author = {MPI},
+    pages = {pages 20 - 57},
+    year = {2017}
+}
+\end{filecontents}
+
+Equations needed to represent the Spatially Explicit Fisheries Risk Assessment framework [@aebar2017], are described. A list of model terms is given in Table 1. This is `sra` version `r packageVersion("sra")`.
+
+# Numbers vulnerable to fishing
+
+The number of adults per species ($s$) is defined using the number of breeding pairs:
+$$
+N^{\mathrm{\,adults}}_s = 2 \cdot \frac{N^{\mathrm{BP}}_s}{P^{\mathrm{B}}_s}
+$$
+The number of adults vulnerable to fishing within the New Zealand EEZ, per species ($s$) and month ($m$) is:
+$$
+N^{\mathrm{\,vuln.\,adults}}_{s,m} = N^{\mathrm{\,adults}}_s \cdot P^{\mathrm{\,in\,eez}}_{s,m} \cdot (1 - P^{\mathrm{\,B}}_s \cdot P^{\mathrm{\,on\,nest}}_{s,m})
+$$
+Outside of the breeding season $P^{\mathrm{\,on\,nest}}_{s,m} = 0$ and all adults within the EEZ are vulnerable to fishing. The number of breeding pairs ($N^{\mathrm{\,BP}}_{s}$) and probability of breeding ($P^{\mathrm{\,B}}_{s}$) are estimated with informed priors during the model fit (biological input priors are listed in the R-package: \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The probability in zone ($P^{\mathrm{\,in\,eez}}_{s,m}$) and probability of being on nest ($P^{\mathrm{\,on\,nest}}_{s,m}$) are currently fixed on input.
+
+# Spatial distribution and overlap
+The spatial distribution of the species is described using a density term $d_{s,m,x}$, which is the number of individuals of species $s$, per kilometre squared, within raster grid $x$, during month $m$. Calculation of this density from the raw input data is described in \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The density is assumed constant across years and normalised to sum to one across grids. If each fishing event $i$ is allocated to a unique grid $x$, and assuming a uniform distribution of individuals within the grid and that individuals do not move, then the dimensionless value $p_{i,s,m}$ is the relative density of individuals at the location of fishing event $i$: 
+$$
+p_{i,s,m} = d_{s,m,x} \qquad \mathrm{for} \quad i \in x 
+$$
+
+The overlap for fishing event $i$ is defined as:
+$$
+\mathrm{overlap}_{i,s,m} = \mathrm{effort}_{i,m} \cdot p_{i,s,m}
+$$
+and the density overlap: 
+$$
+\underbrace{\mathrm{density\,overlap}_{i,s,m}}_{\mathbb{O}_{i,s,m}} = \underbrace{\mathrm{effort}_{i,m}}_{a_{i,m}} \cdot p_{i,s,m} \cdot \underbrace{N^{\mathrm{\,vuln.\,adults}}_{s,m}}_{\mathbb{N}_{s,m}}
+$$
+for which we introduce the notation $\mathbb{O}_{i,s,m}$, $a_{i,m}$ and $\mathbb{N}_{s,m}$ [@aebar2017]. Effort is aggregated by fishery group $j$, and fishing method $k$, so that fishing event $i$ is a subset of fishing group $j$, and fishing group $j$ is a subset of fishing method $k$ (i.e. $i \in j \in k$). The density overlap for fishing group $j$ is the summation across events:
+$$
+\mathbb{O}_{j,s,m} = \sum_{i \in j}{a_{i,m} \cdot p_{i,s,m} \cdot \mathbb{N}_{s,m}}
+$$
+which is specific to the species $s$ and month $m$.
+
+# Expected captures and deaths
+The capture probability per unit of density overlap is described by the vulnerability $\upsilon_{j,s}$, which is defined at the level of the fishing group $j$ and species $s$. The total captures for fishing group $j$, per species and month is expected to be:
+$$
+\underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} = \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}
+$$
+noting calculation of the density overlap using all known fishing effort per fishery group, $a_{j,m}$. The observable captures per month are calculated using $p^{obs}_{k,z}$, which is the probability of observing a capture given that an observer is present and the capture has occurred (equal to the inverse of the cryptic mortality multiplier $\kappa^{-1}_{k,z}$). The product of $\upsilon_{j,s}$ and $p^{obs}_{k,z}$ gives the catchability $q_{j,s}$. The number of observable captures is therefore expected to be:
+```{=tex}
+\begin{align*}
+\mathrm{observable\,captures}_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot p^{obs}_{k,z} \\
+& = q_{j,s} \cdot \mathbb{O}_{j,s,m}
+\end{align*}
+```
+Finally, we use the observed fishing intensity $a^{\,\prime}_{j,m}$ and associated observed density overlap $\mathbb{O}^{\,\prime}_{j,s,m}$ to calculate the expected number of observed captures:
+$$
+\underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
+$$
+The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$), and $\omega_{j,z}$, which is the probability of a live capture surviving post-release. The probability of death is $\Psi_{j,z} \cdot (1 - \omega_{j,z}) + (1 - \Psi_{j,z})$, which can be simplified to predict the number of deaths and observed deaths:
+$$
+\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega_{j,z})
+$$
+$$
+\underbrace{\mathrm{observed\,deaths}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega_{j,z})
+$$
+
+# Capture type
+
+It is possible to separate the catchability according to the capture type. If we use the notation $C_{t,j,s,m}$ to refer to captures of a specific type $t$ by fishery group $j$, with total captures by that group equal to the sum across types: $C_{j,s,m} = \sum_{t}{C_{t,j,s,m}}$; then we can write the catch equation as:
+```{=tex}
+\begin{align*}
+C_{j,s,m} &= q_{j,s} \cdot \mathbb{O}_{j,s,m} \\
+C_{1,j,s,m} + C_{2,j,s,m} + \dots &= q_{j,s} \cdot (\pi_1 + \pi_2 + \dots) \cdot \mathbb{O}_{j,s,m} \\
+\end{align*}
+```
+with $\sum_{t}{\pi_t} = 1$. The probability of observing a capture type $t$ by fishery group $j$ then becomes the product $\pi_t \cdot q_{j,s}$. 
+
+Being able to represent the capture type within each fishery group is important to account for changing fishing practices. For example, changes in the trawl fishery have changed the proportion of captures that occur on the warp or on the net. It also allows the cryptic mortality multiplier to be properly defined. Captures on the warp in particular are less likely to be observed and should therefore have a higher cryptic mortality. In the longline fisheries, captures during hauling will have a lower cryptic mortality than captures during setting.
+
+# Regression equations
+
+The model is fitted to the observed number of captures and deaths. If $C^{\,\prime}_{j,s,m}$ is the observed number of captures for fishery group $j$, species $s$ and month $m$, then the expectation is:
+$$
+\lambda_{j,s,m} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
+$$
+and the likelihood is:
+$$
+C^{\,\prime}_{j,s,m} \sim Poisson(\lambda_{j,s,m})
+$$
+For fishery groups with more than one capture type:
+$$
+C^{\,\prime}_{t,j,s,m} \sim Poisson(\pi_t \cdot \lambda_{j,s,m})
+$$
+
+The probability of death is included as a separate likelihood, using the number of observed live captures $L^{\,\prime}_{j,s,m} \leq C^{\,\prime}_{j,s,m}$:
+$$
+L^{\,\prime}_{j,s,m} \sim Binomial(C^{\,\prime}_{j,s,m}, \Psi_{j,z})
+$$
+The probabilities of post-release survival $\omega_{j,z}$ do not form part of the likelihood equations, since there are no data which could inform their estimation. Similarly for $p^{obs}_{k,s}$, which also do not form part of the likelihood. Instead $\omega_{j,z}$ and $p^{obs}_{k,s}$ are included as distributions, which allow the total number of deaths to be predicted with appropriate uncertainty.
+
+The catchability is a function of method ($k$), fishery group ($j$) and species group ($z$) covariates:
+$$
+\mathrm{logit}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{s,j}
+$$
+where $\varepsilon_{s,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
+$$
+\mathrm{logit}(\Psi_{j,z}) = \gamma_j + \gamma_z
+$$
+Coefficients $\gamma_j$ and $\gamma_z$ are constrained to sum to zero.
+
+## Estimation
+All estimation was performed within a Bayesian framework using rstan [@stan2021].
+
+
+```{=tex}
+\begin{table}
+\centering
+\footnotesize
+\caption{Summary of model terms}\label{tab:pars}
+\begin{tabular}{lp{0.5\linewidth}}
+\toprule
+ & Description   \\
+\midrule
+\multicolumn{2}{l}{\textbf{Subscripts}}\\
+$i$ & Event\\
+$j$ & Fishing group\\
+$k$ & Method\\
+$t$ & Capture type \\
+$s$ & Species\\
+$z$ & Species group \\
+$m$ & Month \\
+$x$ & Raster grid\\
+& \\
+\multicolumn{2}{l}{\textbf{Estimated parameters}} \\
+$N^{\mathrm{\,BP}}_s$ & Number of breeding pairs  \\
+$P^{\mathrm{\,B}}_s$ & Annual probability of breeding  \\
+$\mu_k$, $\beta_j$, $\beta_z$, $\varepsilon_{sj}$ & Catchability coefficients  \\
+$\gamma_j$, $\gamma_z$& Survivorship coefficients \\
+$\pi_t$ & Probability of capture type \\
+& \\
+\multicolumn{2}{l}{\textbf{Derived parameters}} \\
+$N^{\mathrm{\,adults}}_s$ & Total number of adults   \\
+$\mathbb{N}_{s,m}$ & Number of adults vulnerable to fishing   \\
+$q_{j,s}$ & Catchabilty  \\
+$\upsilon_{j,s}$ & Vulnerability \\
+$\Psi_{j,z}$ & Probability alive given capture \\
+& \\
+\multicolumn{2}{l}{\textbf{Input covariates}}\\
+$P^{\mathrm{\,in\,eez}}_{s,m}$ & Probability of an adult being in the EEZ  \\
+$P^{\mathrm{\,on\,nest}}_{s,m}$ & Probability of an adult being on the nest  \\
+$d(s,m,x)$ & Number of adults per km\textsuperscript{2}   \\
+$g(x)$ & Area in km\textsuperscript{2}   \\
+$a_i$ & Fishing effort intensity  \\
+&\\
+\multicolumn{2}{l}{\textbf{Derived covariates}}\\
+$p_{i,s,m}$ & Proprtionate number of individuals available to fishing   \\
+$\mathbb{O}_{i,s,m}$ & Density overlap  \\
+& \\
+\multicolumn{2}{l}{\textbf{Observational data}}\\
+$C^{\,\prime}_{i,s,m}$ & Number of captures \\
+$L^{\,\prime}_{i,s,m}$ & Number of live captures \\
+\bottomrule
+\end{tabular}
+\end{table}
+```
+
+
+\clearpage
+
