@@ -23,8 +23,8 @@ apt_packages:
   - libv8-dev
   
 script:
-    - travis_wait R CMD build .
-    - travis_wait R CMD check .
+    - travis_wait 60 R CMD build .
+    - travis_wait 60 R CMD check .
 
 repos:
   CRAN: https://cran.rstudio.com
