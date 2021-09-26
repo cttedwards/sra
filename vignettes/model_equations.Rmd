@@ -197,9 +197,8 @@ $\Psi_{j,z}$ & Probability alive given capture \\
 & \\
 \multicolumn{2}{l}{\textbf{Input covariates}}\\
 $P^{\mathrm{\,in\,eez}}_{s,m}$ & Probability of an adult being in the EEZ  \\
-$P^{\mathrm{\,on\,nest}}_{s,m}$ & Probability of an adult being on the nest  \\
+$P^{\mathrm{\,on\,nest}}_{s,m}$ & Probability of a breeding adult being on the nest  \\
 $d(s,m,x)$ & Number of adults per km\textsuperscript{2}   \\
-$g(x)$ & Area in km\textsuperscript{2}   \\
 $a_i$ & Fishing effort intensity  \\
 &\\
 \multicolumn{2}{l}{\textbf{Derived covariates}}\\
