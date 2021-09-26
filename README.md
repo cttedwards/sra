@@ -7,7 +7,7 @@ Seabird Risk Assessment (model)  <img src='seagull.png' align="right" height="60
  
  To install, we recommend calling:
  
- `remotes::install_github("cttedwards/sra", build_vignettes = TRUE)`
+ `remotes::install_github("cttedwards/sra")`
  
  A package vignette detailing the model equations can be viewed using:
  
