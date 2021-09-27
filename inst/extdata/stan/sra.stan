@@ -206,7 +206,7 @@ transformed parameters {
     // back transform catchability onto natural scale
     for (g in 1:n_fishery_group) {
       for (s in 1:n_species) {
-        q_sg[s,g] = inv_logit(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gs[g,s]);
+        q_sg[s,g] = exp(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gs[g,s]);
       }
     }
     
