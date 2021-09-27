@@ -58,17 +58,17 @@ roxygen2::roxygenise("..")
 
 Equations needed to represent the Spatially Explicit Fisheries Risk Assessment framework [@aebar2017], are described. A list of model terms is given in Table 1. This is `sra` version `r packageVersion("sra")`.
 
-# Numbers vulnerable to fishing
+# Numbers available to fishing
 
 The number of adults per species ($s$) is defined using the number of breeding pairs:
 $$
 N^{\mathrm{\,adults}}_s = 2 \cdot \frac{N^{\mathrm{BP}}_s}{P^{\mathrm{B}}_s}
 $$
-The number of adults vulnerable to fishing within the New Zealand EEZ, per species ($s$) and month ($m$) is:
+The number of adults available to fishing within the New Zealand EEZ, per species ($s$) and month ($m$) is:
 $$
-N^{\mathrm{\,vuln.\,adults}}_{s,m} = N^{\mathrm{\,adults}}_s \cdot P^{\mathrm{\,in\,eez}}_{s,m} \cdot (1 - P^{\mathrm{\,B}}_s \cdot P^{\mathrm{\,on\,nest}}_{s,m})
+N^{\mathrm{\,avail.\,adults}}_{s,m} = N^{\mathrm{\,adults}}_s \cdot P^{\mathrm{\,in\,eez}}_{s,m} \cdot (1 - P^{\mathrm{\,B}}_s \cdot P^{\mathrm{\,on\,nest}}_{s,m})
 $$
-Outside of the breeding season $P^{\mathrm{\,on\,nest}}_{s,m} = 0$ and all adults within the EEZ are vulnerable to fishing. The number of breeding pairs ($N^{\mathrm{\,BP}}_{s}$) and probability of breeding ($P^{\mathrm{\,B}}_{s}$) are estimated with informed priors during the model fit (biological input priors are listed in the R-package: \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The probability in zone ($P^{\mathrm{\,in\,eez}}_{s,m}$) and probability of being on nest ($P^{\mathrm{\,on\,nest}}_{s,m}$) are currently fixed on input.
+Outside of the breeding season $P^{\mathrm{\,on\,nest}}_{s,m} = 0$ and all adults within the EEZ are available to fishing. The number of breeding pairs ($N^{\mathrm{\,BP}}_{s}$) and probability of breeding ($P^{\mathrm{\,B}}_{s}$) are estimated with informed priors during the model fit (biological input priors are listed in the R-package: \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The probability in zone ($P^{\mathrm{\,in\,eez}}_{s,m}$) and probability of being on nest ($P^{\mathrm{\,on\,nest}}_{s,m}$) are currently fixed on input.
 
 # Spatial distribution and overlap
 The spatial distribution of the species is described using a density term $d_{s,m,x}$, which is the number of individuals of species $s$, per kilometre squared, within raster grid $x$, during month $m$. Calculation of this density from the raw input data is described in \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The density is assumed constant across years and normalised to sum to one across grids. If each fishing event $i$ is allocated to a unique grid $x$, and assuming a uniform distribution of individuals within the grid and that individuals do not move, then the dimensionless value $p_{i,s,m}$ is the relative density of individuals at the location of fishing event $i$: 
@@ -82,7 +82,7 @@ $$
 $$
 and the density overlap: 
 $$
-\underbrace{\mathrm{density\,overlap}_{i,s,m}}_{\mathbb{O}_{i,s,m}} = \underbrace{\mathrm{effort}_{i,m}}_{a_{i,m}} \cdot p_{i,s,m} \cdot \underbrace{N^{\mathrm{\,vuln.\,adults}}_{s,m}}_{\mathbb{N}_{s,m}}
+\underbrace{\mathrm{density\,overlap}_{i,s,m}}_{\mathbb{O}_{i,s,m}} = \underbrace{\mathrm{effort}_{i,m}}_{a_{i,m}} \cdot p_{i,s,m} \cdot \underbrace{N^{\mathrm{\,avail.\,adults}}_{s,m}}_{\mathbb{N}_{s,m}}
 $$
 for which we introduce the notation $\mathbb{O}_{i,s,m}$, $a_{i,m}$ and $\mathbb{N}_{s,m}$ [@aebar2017]. Effort is aggregated by fishery group $j$, and fishing method $k$, so that fishing event $i$ is a subset of fishing group $j$, and fishing group $j$ is a subset of fishing method $k$ (i.e. $i \in j \in k$). The density overlap for fishing group $j$ is the summation across events:
 $$
@@ -190,7 +190,7 @@ $\pi_t$ & Probability of capture type \\
 & \\
 \multicolumn{2}{l}{\textbf{Derived parameters}} \\
 $N^{\mathrm{\,adults}}_s$ & Total number of adults   \\
-$\mathbb{N}_{s,m}$ & Number of adults vulnerable to fishing   \\
+$\mathbb{N}_{s,m}$ & Number of adults available to fishing   \\
 $q_{j,s}$ & Catchabilty  \\
 $\upsilon_{j,s}$ & Vulnerability \\
 $\Psi_{j,z}$ & Probability alive given capture \\
