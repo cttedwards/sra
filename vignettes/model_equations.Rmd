@@ -150,7 +150,7 @@ The probabilities of post-release survival $\omega_{j,z}$ do not form part of th
 
 The catchability is a function of method ($k$), fishery group ($j$) and species group ($z$) covariates:
 $$
-\mathrm{logit}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{s,j}
+\mathrm{log}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{s,j}
 $$
 where $\varepsilon_{s,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
 $$
