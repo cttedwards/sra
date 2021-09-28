@@ -71,7 +71,11 @@ $$
 Outside of the breeding season $P^{\mathrm{\,on\,nest}}_{s,m} = 0$ and all adults within the EEZ are available to fishing. The number of breeding pairs ($N^{\mathrm{\,BP}}_{s}$) and probability of breeding ($P^{\mathrm{\,B}}_{s}$) are estimated with informed priors during the model fit (biological input priors are listed in the R-package: \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The probability in zone ($P^{\mathrm{\,in\,eez}}_{s,m}$) and probability of being on nest ($P^{\mathrm{\,on\,nest}}_{s,m}$) are currently fixed on input.
 
 # Spatial distribution and overlap
-The spatial distribution of the species is described using a density term $d_{s,m,x}$, which is the number of individuals of species $s$, per kilometre squared, within raster grid $x$, during month $m$. Calculation of this density from the raw input data is described in \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The density is assumed constant across years and normalised to sum to one across grids. If each fishing event $i$ is allocated to a unique grid $x$, and assuming a uniform distribution of individuals within the grid and that individuals do not move, then the dimensionless value $p_{i,s,m}$ is the relative density of individuals at the location of fishing event $i$: 
+The spatial distribution of the species is described using a density term $d_{s,m,x}$, which is the number of individuals of species $s$, per kilometre squared, within raster grid $x$, during month $m$. Calculation of this density from the raw input data is described in \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio}). The density is assumed constant across years and normalised to sum to one across grids. The value $d_{s,m,x}$ can be thought of as the binomial sampling probability of an individual being in grid $x$. The expected number of individuals at that location is therefore:
+$$
+N^{\mathrm{\,avail.\,adults}}_{s,m,x} = d_{s,m,x} \cdot N^{\mathrm{\,avail.\,adults}}_{s,m}
+$$
+If each fishing event $i$ is allocated to a unique grid $x$, and assuming a uniform distribution of individuals within the grid and that individuals do not move, then $p_{i,s,m}$ is the value of $d_{s,m,x}$ at the location of fishing event $i$: 
 $$
 p_{i,s,m} = d_{s,m,x} \qquad \mathrm{for} \quad i \in x 
 $$
@@ -84,7 +88,9 @@ and the density overlap:
 $$
 \underbrace{\mathrm{density\,overlap}_{i,s,m}}_{\mathbb{O}_{i,s,m}} = \underbrace{\mathrm{effort}_{i,m}}_{a_{i,m}} \cdot p_{i,s,m} \cdot \underbrace{N^{\mathrm{\,avail.\,adults}}_{s,m}}_{\mathbb{N}_{s,m}}
 $$
-for which we introduce the notation $\mathbb{O}_{i,s,m}$, $a_{i,m}$ and $\mathbb{N}_{s,m}$ [@aebar2017]. Effort is aggregated by fishery group $j$, and fishing method $k$, so that fishing event $i$ is a subset of fishing group $j$, and fishing group $j$ is a subset of fishing method $k$ (i.e. $i \in j \in k$). The density overlap for fishing group $j$ is the summation across events:
+for which we introduce the notation $\mathbb{O}_{i,s,m}$, $a_{i,m}$ and $\mathbb{N}_{s,m}$ [@aebar2017]. The density overlap is the expectation from a binomial distribution, with sampling probability $p_{i,s,m}$ and number of samples equal to $a_{i,m} \cdot \mathbb{N}_{s,m}$. It is proportional to the number of encounters between birds of species $s$ and fishing event $i$. But because effort units are arbitrary the density overlap cannot be compared between fishing methods that use different units (meaning that vulnerabilities can also not be compared). 
+
+Effort is aggregated by fishery group $j$, and fishing method $k$, so that fishing event $i$ is a subset of fishing group $j$, and fishing group $j$ is a subset of fishing method $k$ (i.e. $i \in j \in k$), adopting the convention that only the subscript of the largest group is reported. The density overlap for fishing group $j$ is the summation across events:
 $$
 \mathbb{O}_{j,s,m} = \sum_{i \in j}{a_{i,m} \cdot p_{i,s,m} \cdot \mathbb{N}_{s,m}}
 $$
