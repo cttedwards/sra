@@ -55,6 +55,9 @@ tab_nums <- captioner::captioner(prefix = "Table")
 ```{r, echo = TRUE, message = FALSE}
 library(sraInputs)
 
+data("methods")
+data("fishing_groups")
+data("fishing_group_definitions")
 data("species")
 data("species_groups")
 data("capture_effort")
@@ -111,44 +114,9 @@ fishing_years   <- paste0(2006:2018, "/", 2007:2019)
 n_fishing_years <- length(fishing_years)
 ```
 
-```{r}
-# construct methods data frame
-methods <- data.frame(id_method = 1:6, 
-                      method = c("BLL", "SLL", "SN", "Trawl", "PS", as.character(NA)), 
-                      include = c(rep(TRUE, 4), rep(FALSE, 2)))
-```
-
-```{r}
-# fishing groups
-source("fishing_group_functions.R")
-fishing_groups <- fishing_groups_option_II
-```
-
 \newpage
 # Inputs summary
 The model includes `r n_fishing_years` years of data between `r min(fishing_years)` and `r max(fishing_years)`. A full list of species and their associated species groups is given in `r tab_nums("tab:species", display = "cite")`. Biological and fisheries data are sourced from the R-packages \href{https://www.github.com/cttedwards/sraInputsBio}{sraInputsBio} (version `r packageVersion("sraInputsBio")`) and \href{https://www.github.com/cttedwards/sraInputs}{sraInputs} (version `r packageVersion("sraInputs")`), respectively. 
-
-Fishing methods included in the model were: `r unique(methods$method[methods$include])`, with associated fishing groups listed in `r tab_nums("tab:fishing_groups", display = "cite")`. Fishing groups have been updated from previous risk assessments [@Richard2017sra,@Richard2020sra] and were redefined based knowledge of fishing practices and chosen to reflect differences in the catchability of seabirds associated with fishing. 
-
-Trawl groups were simplified and defined using a combination of length, target species, and presence of a freezer (Figure \ref{fig:trawlv1}). Bottom longline groups were updated to separate out small autoline vessels, and these were further split by target. Manual longline vessels were split by target species (Figure \ref{fig:bllv1}). Surface longline effort was split into the large vessel joint venture fleet and the smaller vessel domestic fleet (targetting tuna and swordfish). Further refinement of the fishery groups will be considered. For example, trawl fleets could be split by discard type, and some proposed bottom longline groups could be joined.
-
-```{=tex}
-\begin{figure}
-\centering
-\includegraphics[width = 0.7\textwidth]{trawlv1.eps}
-\caption{Decision tree for partition of trawl groups.}
-\label{fig:trawlv1}
-\end{figure}
-```
-
-```{=tex}
-\begin{figure}
-\centering
-\includegraphics[width = 0.7\textwidth]{bllv1.eps}
-\caption{Decision tree for partition of BLL groups.}
-\label{fig:bllv1}
-\end{figure}
-```
 
 ```{=tex}
 \captionsetup[table]{labelformat=empty}
@@ -208,22 +176,21 @@ dat <- capture_effort %>% filter(fishing_year %in% fishing_years) %>% filter(!is
 
 ```{r}
 # identify fishery groups
-dat <- dat %>% mutate(id_fishing_group_option_II = case_when(method == "Trawl" ~ trawl_groups_option_IIA(method, fishery, target, vessel_key, vessel_class, start_date, vessel_size, vessel_freezer),
-                                                   method == "BLL" ~ bll_groups_option_II(method, fishery, target, vessel_key, vessel_class, start_date, vessel_length),
-                                                   method == "SLL" ~ sll_groups_option_II(vessel_class, method),
-                                                   method == "SN" ~ setnet_groups_option_II(method),
-                                                   method == "PS" ~ purseseine_groups_option_II(method),
-                                                   TRUE ~ as.numeric(NA))) %>% filter(!is.na(id_fishing_group_option_II))
+dat <- dat %>% mutate(id_fishing_group_option = case_when(method == "Trawl" ~ fishing_group_definitions[["trawl"]](method, fishery, target, vessel_key, vessel_class, start_date, vessel_size, vessel_freezer),
+                                                   method == "BLL" ~ fishing_group_definitions[["bll"]](method, fishery, target, vessel_key, vessel_class, start_date, vessel_length),
+                                                   method == "SLL" ~ fishing_group_definitions[["sll"]](vessel_class, method),
+                                                   method == "SN" ~ fishing_group_definitions[["setnet"]](method),
+                                                   method == "PS" ~ fishing_group_definitions[["purseseine"]](method),
+                                                   TRUE ~ as.numeric(NA))) %>% filter(!is.na(id_fishing_group))
 
 # organise group names
-fishing_groups <- fishing_groups_option_II %>% 
-  left_join(methods, by = "method") %>% 
-  filter(include, id_fishing_group_option_II %in% unique(dat$id_fishing_group_option_II)) %>% 
+fishing_groups <- fishing_groups %>% 
+  filter(include, id_fishing_group_option %in% unique(dat$id_fishing_group_option)) %>% 
   select(-include) %>%
   mutate(id_fishing_group = 1:nrow(.))
 
 # join
-dat <- dat %>% left_join(fishing_groups, by = c("id_fishing_group_option_II", "method")) %>% select(-id_fishing_group_option_II) %>% rename(fishing_group = fishing_group_name)
+dat <- dat %>% left_join(fishing_groups, by = c("id_fishing_group_option", "method")) %>% select(-id_fishing_group_option) %>% rename(fishing_group = fishing_group_name)
 
 # remove unwanted methods
 dat <- dat %>% filter(!is.na(id_method))
