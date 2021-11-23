@@ -181,8 +181,8 @@ pandoc.table(tab_sg,
 
 \clearpage
 ```{r}
-# read file to obtain proportions in zone per species and month
-sbp <- read.csv("species_breeding_months.csv")
+# proportions in zone per species and month
+sbp <- inputsBio[["breeding_season"]]
 sbp <- sbp %>% 
      dplyr::select(id_species, code_sra, breeding, nonbreeding) %>% 
      tidyr::pivot_longer(cols = c("breeding", "nonbreeding"), values_to = "month", names_to = "period") %>% tidyr::separate_rows(month) %>% 
@@ -479,8 +479,8 @@ for (spp in species) {
   out[[spp]] <- knit_child('make_inputs_species.Rmd', envir = new.env())
 }
 
-save(observed_overlap, file = file.path("../data", "observed_overlap.rda"))
-save(observed_density, file = file.path("../data", "observed_density.rda"))
+usethis::use_data(observed_overlap)
+usethis::use_data(observed_density)
 ```
 
 ```{r}
@@ -514,8 +514,8 @@ for (spp in species) {
   total_overlap[, spp] <- dfr@data$density_overlap[,1]
 }
 
-save(total_overlap, file = file.path("../data", "total_overlap.rda"))
-save(total_density, file = file.path("../data", "total_density.rda"))
+usethis::use_data(total_overlap)
+usethis::use_data(total_density)
 ```
 
 ```{r}
@@ -694,12 +694,6 @@ load("cm_pars.rda")
 
 ```{r}
 # Import demographic data
-#N_BP   <- read.csv("N_BP.csv")
-#S_curr <- read.csv("S_curr.csv")
-#S_opt  <- read.csv("S_opt.csv")
-#A_curr <- read.csv("A_curr.csv")
-#P_B    <- read.csv("P_B.csv")
-
 N_BP   <- inputsBio[["N_BP"]]
 S_curr <- inputsBio[["S_curr"]]
 S_opt  <- inputsBio[["S_opt"]]
@@ -826,12 +820,12 @@ sra_ini <- list(log_q_intercept = rep(0, sra_dat$n_method),
 
 ```{r}
 # save
-save(methods, file = file.path("../data", "methods.rda"))
-save(fishing_groups, file = file.path("../data", "fishing_groups_II.rda"))
-save(sra_ini, file = file.path("../data", "sra_ini_update_1.rda"))
-save(sra_dat, file = file.path("../data", "sra_dat_update_1.rda"))
-save(overlap_o, file = file.path("../data", "overlap_o.rda"))
-save(overlap_t, file = file.path("../data", "overlap_t.rda"))
+usethis::use_data(methods)
+usethis::use_data(fishing_groups)
+usethis::use_data(sra_ini)
+usethis::use_data(sra_dat)
+usethis::use_data(overlap_o)
+usethis::use_data(overlap_t)
 ```
 
 \newpage
