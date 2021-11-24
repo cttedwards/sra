@@ -181,7 +181,7 @@ dat <- dat %>% mutate(id_fishing_group_option = case_when(method == "Trawl" ~ fi
                                                    method == "SLL" ~ fishing_group_definitions[["sll"]](vessel_class, method),
                                                    method == "SN" ~ fishing_group_definitions[["setnet"]](method),
                                                    method == "PS" ~ fishing_group_definitions[["purseseine"]](method),
-                                                   TRUE ~ as.numeric(NA))) %>% filter(!is.na(id_fishing_group))
+                                                   TRUE ~ as.numeric(NA))) %>% filter(!is.na(id_fishing_group_option))
 
 # organise group names
 fishing_groups <- fishing_groups %>% 
