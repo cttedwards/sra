@@ -22,6 +22,7 @@
 vignettes/*.html
 vignettes/*.pdf
 vignettes/fig/*
+vignettes/model_inputs_files/*
 
 # knitr and R markdown default cache directories
 *_cache/
