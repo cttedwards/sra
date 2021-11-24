@@ -21,6 +21,9 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+vignettes/*.R
+vignettes/*.tex
+vignettes/*.log
 vignettes/fig/*
 vignettes/model_inputs_files/*
 
