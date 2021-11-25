@@ -184,10 +184,15 @@ dat <- dat %>% mutate(id_fishing_group_option = case_when(method == "Trawl" ~ fi
                                                    TRUE ~ as.numeric(NA))) %>% filter(!is.na(id_fishing_group_option))
 
 # organise group names
+fishing_groups_init <- fishing_groups
 fishing_groups <- fishing_groups %>% 
   filter(include, id_fishing_group_option %in% unique(dat$id_fishing_group_option)) %>% 
   select(-include) %>%
   mutate(id_fishing_group = 1:nrow(.))
+  
+# table of fishing groups that are removed
+# following match to the data
+fishing_groups_remove <- fishing_groups_init %>% filter(!(id_fishing_group_option %in% unique(fishing_groups$id_fishing_group_option)))
 
 # join
 dat <- dat %>% left_join(fishing_groups, by = c("id_fishing_group_option", "method")) %>% select(-id_fishing_group_option) %>% rename(fishing_group = fishing_group_name)
@@ -199,7 +204,7 @@ methods <- methods %>% filter(include)
 ```
 
 ```{r, results = "asis", size = "scriptsize"}
-tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events."))
+tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events. Fishing groups ", fishing_groups_remove$fishing_group_label, " were not present in the data or were removed."))
 
 tab <- dat %>% group_by(id_fishing_group) %>% 
   summarise(method = unique(method), 
@@ -226,6 +231,8 @@ pandoc.table(tab,
              row.names = FALSE, 
              split.table = Inf,
              col.names = c("Method", "Fishing group", "ID", "Start", "End", "Observed effort", "Total effort", "Coverage (%)", "n captures"))
+             
+rm(fishing_groups_init, fishing_groups_remove)
 ```
 
 \clearpage
