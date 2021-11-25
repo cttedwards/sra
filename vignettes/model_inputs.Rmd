@@ -204,33 +204,32 @@ methods <- methods %>% filter(include)
 ```
 
 ```{r, results = "asis", size = "scriptsize"}
-tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events. Fishing groups ", fishing_groups_remove$fishing_group_label, " were not present in the data or were removed."))
+tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events. Fishing groups ", paste(fishing_groups_remove$fishing_group_label, collapse = " and "), " were not present in the data or were removed."))
 
 tab <- dat %>% group_by(id_fishing_group) %>% 
   summarise(method = unique(method), 
             id_method = unique(id_method),
             fishing_group = unique(fishing_group_label), 
-            year_start = "2006/07",
-            year_end = "2018/19",
+            years = "2006/07 - 18/19",
             observer_effort = sum(observer_effort_num), 
             total_effort    = sum(effort_num),
             coverage_percent = 100 * round(observer_effort / total_effort, 3), 
             n_captures = sum(n_captures, na.rm = TRUE)) 
 
-tab <- tab %>% select(method, fishing_group, id_fishing_group, year_start, year_end, observer_effort, total_effort, coverage_percent, n_captures)
+tab <- tab %>% select(method, fishing_group, id_fishing_group, years, observer_effort, total_effort, coverage_percent, n_captures)
 
-tot <- c(method = "Total", fishing_group = NA, id_fishing_group = NA, year_start = NA, year_end = NA, colSums(tab[,6:9], na.rm = TRUE))
-tot[8] <- NA 
+tot <- c(method = "Total", fishing_group = NA, id_fishing_group = NA, years = NA, colSums(tab[,5:8], na.rm = TRUE))
+tot[7] <- NA 
 tab <- rbind(tab, t(tot)) 
 
 pandoc.table(tab,
              caption = tab_cap,
-             justify = c("left", "left", "left", "left", "left", "right", "right", "right", "right"), 
+             justify = c("left", "left", "left", "left", "right", "right", "right", "right"), 
              emphasize.strong.rows = nrow(tab),
              missing = "-",
              row.names = FALSE, 
              split.table = Inf,
-             col.names = c("Method", "Fishing group", "ID", "Start", "End", "Observed effort", "Total effort", "Coverage (%)", "n captures"))
+             col.names = c("Method", "Fishing group", "ID", "Years", "Observed effort", "Total effort", "Coverage (%)", "n captures"))
              
 rm(fishing_groups_init, fishing_groups_remove)
 ```
@@ -412,7 +411,7 @@ observer_dat_sp <- sp::SpatialPointsDataFrame(coords = cbind(observer_dat$start_
 
 ```{r, results = 'hide'}
 # not sure what's going on here
-source("C:/Rpackages/sraInputsBio/R/plot_sra_maps.R")
+#source("C:/Rpackages/sraInputsBio/R/plot_sra_maps.R")
 
 # calculate observed density and overlap
 observed_density <- matrix(nrow = nrow(observer_dat), ncol = length(species))
@@ -488,8 +487,8 @@ for (spp in species) {
   total_overlap[, spp] <- dfr@data$density_overlap[,1]
 }
 
-usethis::use_data(total_overlap)
-usethis::use_data(total_density)
+usethis::use_data(total_overlap, overwrite = TRUE)
+usethis::use_data(total_density, overwrite = TRUE)
 ```
 
 ```{r}
@@ -517,25 +516,32 @@ overlap_o <- overlap_o %>%
   mutate(month = as.integer(month), id_method = as.integer(id_method), id_fishing_group = as.integer(id_fishing_group), id_cryptic_mortality_group = as.integer(id_cryptic_mortality_group)) %>%
   select(species, method, id_method, month, id_fishing_group, id_species, id_species_group, id_cryptic_mortality_group, overlap)
 
-# get captures
-cap_alive <- observer_dat %>% as.data.frame() %>% mutate_captures_status("alive") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
-cap_dead  <- observer_dat %>% as.data.frame() %>% mutate_captures_status("dead")  %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
-cap       <- full_join(cap_alive, cap_dead, by = c("species", "id_method", "id_fishing_group", "month"), suffix = c("_alive", "_dead"))
-cap       <- cap %>% mutate(n_captures = n_captures_alive + n_captures_dead)
+# get captures by status (alive / dead)
+cap_alive  <- observer_dat %>% as.data.frame() %>% mutate_captures_status("alive") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
+cap_dead   <- observer_dat %>% as.data.frame() %>% mutate_captures_status("dead")  %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
+cap_status <- full_join(cap_alive, cap_dead, by = c("species", "id_method", "id_fishing_group", "month"), suffix = c("_alive", "_dead"))
+cap_status <- cap_status %>% mutate(n_captures = n_captures_alive + n_captures_dead)
 
-cap_sum <- cap %>% group_by(id_method, id_fishing_group, species, month) %>% summarise(n_captures_alive = sum(n_captures_alive), n_captures_dead = sum(n_captures_dead), n_captures = sum(n_captures))
+cap_status <- cap_status %>% group_by(id_method, id_fishing_group, species, month) %>% summarise(n_captures_alive = sum(n_captures_alive), n_captures_dead = sum(n_captures_dead), n_captures = sum(n_captures))
+
+# get captures by type (net / warp)
+cap_net   <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_method", condition = "Net")  %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group, n_captures_net = n_captures)
+cap_warp  <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_method", condition = "Warp") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group, n_captures_warp = n_captures)
+cap_other <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_method", condition = c("Other", "Hook", "Tangled", "Mitigation device", "Line", "Paravane")) %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group, n_captures_other = n_captures)
+cap_type <- cap_net %>% full_join(cap_warp, by = c("species", "id_method", "id_fishing_group", "month")) %>% full_join(cap_other, by = c("species", "id_method", "id_fishing_group", "month"))
 
 # join overlap and captures
 overlap_o <- overlap_o %>%
-  left_join(cap_sum, by = c("id_method", "id_fishing_group", "species", "month")) %>%
-  tidyr::replace_na(replace = list(n_captures_alive = 0, n_captures_dead = 0))
+  left_join(cap_status, by = c("id_method", "id_fishing_group", "species", "month")) %>% 
+  left_join(cap_type,   by = c("id_method", "id_fishing_group", "species", "month")) %>%
+  tidyr::replace_na(replace = list(n_captures_alive = 0, n_captures_dead = 0, n_captures_net = -1, n_captures_warp = -1, n_captures_other = -1))
 
 # remove zero overlap values with no captures
 overlap_o <- overlap_o %>% filter(overlap > 0.0 | n_captures > 0)
 
 # checks
 stopifnot(isTRUE(all.equal(sum(observed_overlap, na.rm = TRUE), sum(overlap_o$overlap))))
-stopifnot(sum(overlap_o$n_captures) == sum(cap$n_captures))
+stopifnot(sum(overlap_o$n_captures) == sum(cap_status$n_captures))
 
 # if captures but no overlap set overlap to small value
 overlap_o <- overlap_o %>% mutate(overlap = case_when(overlap == 0.0 & n_captures > 0 ~ 1e-5, TRUE ~ overlap))
