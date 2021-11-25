@@ -58,6 +58,9 @@ library(sraInputs)
 data("methods")
 data("fishing_groups")
 data("fishing_group_definitions")
+data("cm_net")
+data("cm_warp")
+data("cm_longline")
 data("species")
 data("species_groups")
 data("capture_effort")
@@ -733,6 +736,13 @@ sra_dat <- list(n_species = length(species),
             capture_type_group_s = species_groups$id_cryptic_mortality_group,
             
             idx_method_fg = fishing_groups$id_method,
+            
+            cm_longline_par1 = cm_longline$par1,
+            cm_longline_par2 = cm_longline$par2,
+            cm_warp_par1 = cm_warp$par1,
+            cm_warp_par2 = cm_warp$par2,
+            cm_net_par1 = cm_net$par1,
+            cm_net_par2 = cm_net$par2,
 
             n_breeding_pairs_type = ifelse(N_BP$distribution == 'log-uniform', 0, ifelse(N_BP$distribution == 'log-normal', 1, 2)),
             n_breeding_pairs_p1 = N_BP$par1,
