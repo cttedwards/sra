@@ -206,7 +206,7 @@ transformed parameters {
     // back transform catchability onto natural scale
     for (g in 1:n_fishery_group) {
       for (s in 1:n_species) {
-        q_sg[s,g] = exp(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gs[g,s]);
+        q_sg[s,g] = inv_logit(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gs[g,s]);
       }
     }
     
@@ -357,8 +357,9 @@ generated quantities {
 
   // posterior predictive checking
   real p_survive_capture;
-  vector[n_i] pred_live_captures_i;
-  vector[n_i] pred_dead_captures_i;
+  vector[n_i] observed_captures_i;
+  vector[n_i] observed_live_captures_i;
+  vector[n_i] observed_dead_captures_i;
   
   // cryptic mortality
   vector<lower=0,upper=1>[n_cm] p_observable;
@@ -368,33 +369,32 @@ generated quantities {
   matrix[n_species,n_fishery_group] vulnerability_sg;
 
   // Captures and deaths
-  vector[n_species]       observed_captures_s;
-  vector[n_method]        observed_captures_m;
-  vector[n_fishery_group] observed_captures_g;
-  vector[n_method]        observed_captures_sm[n_species];
-  vector[n_fishery_group] observed_captures_sg[n_species];
-  vector[n_species]       observed_deaths_s;
-  vector[n_method]        observed_deaths_m;
-  vector[n_fishery_group] observed_deaths_g;
-  vector[n_method]        observed_deaths_sm[n_species];
-  vector[n_fishery_group] observed_deaths_sg[n_species];
+  vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
+  vector[n_method]        observed_captures_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] observed_captures_g = rep_vector(0.0, n_fishery_group);
+  vector[n_species]       observed_deaths_s = rep_vector(0.0, n_species);
+  vector[n_method]        observed_deaths_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] observed_deaths_g = rep_vector(0.0, n_fishery_group);
   
-  vector[n_species]       captures_s;
-  vector[n_method]        captures_m;
-  vector[n_fishery_group] captures_g;
-  vector[n_method]        captures_sm[n_species];
-  vector[n_fishery_group] captures_sg[n_species];
-  vector[n_species]       deaths_s;
-  vector[n_method]        deaths_m;
-  vector[n_fishery_group] deaths_g;
-  vector[n_method]        deaths_sm[n_species];
-  vector[n_fishery_group] deaths_sg[n_species];
+  vector[n_species]       observable_captures_s = rep_vector(0.0, n_species);
+  vector[n_method]        observable_captures_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] observable_captures_g = rep_vector(0.0, n_fishery_group);
+  vector[n_species]       observable_deaths_s = rep_vector(0.0, n_species);
+  vector[n_method]        observable_deaths_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] observable_deaths_g = rep_vector(0.0, n_fishery_group);
   
-  vector[n_species]       cryptic_deaths_s;
-  vector[n_method]        cryptic_deaths_m;
-  vector[n_fishery_group] cryptic_deaths_g;
-  vector[n_method]        cryptic_deaths_sm[n_species];
-  vector[n_fishery_group] cryptic_deaths_sg[n_species];
+  vector[n_species]       captures_s = rep_vector(0.0, n_species);
+  vector[n_method]        captures_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] captures_g = rep_vector(0.0, n_fishery_group);
+  vector[n_method]        deaths_sm[n_species] = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] deaths_sg[n_species] = rep_array(rep_vector(0.0, n_fishery_group), n_species);
+  vector[n_species]       deaths_s = rep_vector(0.0, n_species);
+  vector[n_method]        deaths_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] deaths_g = rep_vector(0.0, n_fishery_group);
+  
+  vector[n_species]       cryptic_deaths_s = rep_vector(0.0, n_species);
+  vector[n_method]        cryptic_deaths_m = rep_vector(0.0, n_method);
+  vector[n_fishery_group] cryptic_deaths_g = rep_vector(0.0, n_fishery_group);
   
   // Mortality check
   vector[n_species] mortality_in_bounds_s;
@@ -516,44 +516,33 @@ generated quantities {
       p_survive_capture_sg[s,g] = p_survive_capture;
     }
   }
-    
-  // initialise captures and deaths
-  for (s in 1:n_species) {      
-    for (g in 1:n_fishery_group) {
-        
-      observed_captures_sg[s,g] = 0.0;
-      observed_deaths_sg[s,g]   = 0.0;
-        
-      captures_sg[s,g] = 0.0;
-      deaths_sg[s,g]   = 0.0;
-      
-      cryptic_deaths_sg[s,g] = 0.0;
-    }
-    for (m in 1:n_method) {
-        
-      observed_captures_sm[s,m] = 0.0;
-      observed_deaths_sm[s,m]   = 0.0;
-        
-      captures_sm[s,m] = 0.0;
-      deaths_sm[s,m]   = 0.0;
-      
-      cryptic_deaths_sm[s,m] = 0.0;
-    }
-  }
 
-  // posterior predictive checking
+  // get total captures and deaths
+  // from observed overlap
   for (i in 1:n_i) {
     
-    pred_live_captures_i[i] = poisson_rng(mu_live_captures_i[i]);
-    pred_dead_captures_i[i] = poisson_rng(mu_dead_captures_i[i]);
+    observed_captures_i[i]      = poisson_rng(mu_observed_captures_i[i]);
+    observed_live_captures_i[i] = poisson_rng(mu_live_captures_i[i]);
+    observed_dead_captures_i[i] = poisson_rng(mu_dead_captures_i[i]);
+    
+    // sum captures
+    observed_captures_s[species_i[i]]       += observed_captures_i[i];
+    observed_captures_g[fishery_group_i[i]] += observed_captures_i[i];
+    observed_captures_m[method_i[i]]        += observed_captures_i[i];
+    
+    // sum captures
+    observed_deaths_s[species_i[i]]       += observed_dead_captures_i[i];
+    observed_deaths_g[fishery_group_i[i]] += observed_dead_captures_i[i];
+    observed_deaths_m[method_i[i]]        += observed_dead_captures_i[i];
   }
 
   // get annual captures and deaths
+  // from total overlap
   {
     real density_overlap_j;
     real p_live_captures_j;
-    real mu_observed_captures_j;
-    real mu_observed_deaths_j;
+    real mu_observable_captures_j;
+    real mu_observable_deaths_j;
     real mu_captures_j;
     real mu_deaths_j;
     real captures_j;
@@ -566,25 +555,27 @@ generated quantities {
         p_live_captures_j = p_live_capture_zg[species_group_j[j], fishery_group_j[j]];
         
         // expected observed captures per year
-        mu_observed_captures_j = q_sg[species_j[j], fishery_group_j[j]] * density_overlap_j / n_years;
+        mu_observable_captures_j = q_sg[species_j[j], fishery_group_j[j]] * density_overlap_j / n_years;
         
         // expected observed deaths per year
-        mu_observed_deaths_j = mu_observed_captures_j * (1.0 - p_live_captures_j);
+        mu_observable_deaths_j = mu_observable_captures_j * (1.0 - p_live_captures_j);
         
         // simulate obsered captures and deaths
-        if (mu_observed_captures_j > 0) {
+        if (mu_observable_captures_j > 0) {
             
             // posterior prediction of average total captures and deaths
-            captures_j = poisson_rng(n_years * mu_observed_captures_j) / n_years;
-            deaths_j   = poisson_rng(n_years * mu_observed_deaths_j) / n_years;
+            captures_j = poisson_rng(n_years * mu_observable_captures_j) / n_years;
+            deaths_j   = poisson_rng(n_years * mu_observable_deaths_j) / n_years;
             
             // sum captures
-            observed_captures_sm[species_j[j], method_j[j]] += captures_j;
-            observed_captures_sg[species_j[j], fishery_group_j[j]] += captures_j;
+            observable_captures_s[species_j[j]]       += captures_j;
+            observable_captures_g[fishery_group_j[j]] += captures_j;
+            observable_captures_m[method_j[j]]        += captures_j;
             
             // sum deaths
-            observed_deaths_sm[species_j[j], method_j[j]] += deaths_j;
-            observed_deaths_sg[species_j[j], fishery_group_j[j]] += deaths_j;
+            observable_deaths_s[species_j[j]]       += deaths_j;
+            observable_deaths_g[fishery_group_j[j]] += deaths_j;
+            observable_deaths_m[method_j[j]]        += deaths_j;
         }
         
         // expected total captures per year
@@ -601,37 +592,34 @@ generated quantities {
             deaths_j   = poisson_rng(n_years * mu_deaths_j) / n_years;
             
             // sum captures
-            captures_sm[species_j[j], method_j[j]] += captures_j;
-            captures_sg[species_j[j], fishery_group_j[j]] += captures_j;
+            captures_s[species_j[j]]       += captures_j;
+            captures_g[fishery_group_j[j]] += captures_j;
+            captures_m[method_j[j]]        += captures_j;
             
             // sum deaths
-            deaths_sm[species_j[j], method_j[j]] += deaths_j;
+            deaths_sm[species_j[j], method_j[j]]        += deaths_j;
             deaths_sg[species_j[j], fishery_group_j[j]] += deaths_j;
             
+            deaths_s[species_j[j]]       += deaths_j;
+            deaths_g[fishery_group_j[j]] += deaths_j;
+            deaths_m[method_j[j]]        += deaths_j;
+            
             // expected cryptic deaths 
-            cryptic_deaths_sm[species_j[j], method_j[j]]        += deaths_j * 
-                                                                   (1 - p_observable_sg[species_j[j], fishery_group_j[j]]);
-            cryptic_deaths_sg[species_j[j], fishery_group_j[j]] += deaths_j * 
-                                                                   (1 - p_observable_sg[species_j[j], fishery_group_j[j]]);
+            cryptic_deaths_s[species_j[j]]       += deaths_j * (1 - p_observable_sg[species_j[j], fishery_group_j[j]]);
+            cryptic_deaths_g[fishery_group_j[j]] += deaths_j * (1 - p_observable_sg[species_j[j], fishery_group_j[j]]);
+            cryptic_deaths_m[method_j[j]]        += deaths_j * (1 - p_observable_sg[species_j[j], fishery_group_j[j]]);
         }
       }
   }
   
   // summmary results by species
   for (s in 1:n_species) {
-      
-    observed_captures_s[s] = sum(observed_captures_sm[s]);
-    observed_deaths_s[s]   = sum(observed_deaths_sm[s]);
     
-    captures_s[s]       = sum(captures_sm[s]);
-    deaths_s[s]         = sum(deaths_sm[s]);
-    
-    cryptic_deaths_s[s] = sum(cryptic_deaths_sm[s]);
-    
+    // risk per species
     risk_ratio_s[s]     = deaths_s[s] / pst_s[s];
     
     // riks of capture per unit effort
-    q_risk_s[s]         = inv_logit(log_q_z[species_group_s[s]]);
+    q_risk_s[s] = inv_logit(mean(log_q_intercept) + log_q_z[species_group_s[s]]);
     
     for (m in 1:n_method) {
       risk_ratio_sm[s,m] = deaths_sm[s,m] / pst_s[s];
@@ -643,14 +631,6 @@ generated quantities {
   
   // summary results by method
   for (m in 1:n_method) {
-      
-    observed_captures_m[m] = sum(observed_captures_sm[,m]);
-    observed_deaths_m[m]   = sum(observed_deaths_sm[,m]);
-    
-    captures_m[m]       = sum(captures_sm[,m]);
-    deaths_m[m]         = sum(deaths_sm[,m]);
-    
-    cryptic_deaths_m[m] = sum(cryptic_deaths_sm[,m]);
     
     // riks of capture per unit effort
     q_risk_m[m]         = inv_logit(log_q_intercept[m]);
@@ -661,14 +641,6 @@ generated quantities {
   
   // summary results by fishery_group
   for (g in 1:n_fishery_group) {
-      
-    observed_captures_g[g] = sum(observed_captures_sg[,g]);
-    observed_deaths_g[g]   = sum(observed_deaths_sg[,g]);
-    
-    captures_g[g]       = sum(captures_sg[,g]);
-    deaths_g[g]         = sum(deaths_sg[,g]);
-    
-    cryptic_deaths_g[g] = sum(cryptic_deaths_sg[,g]);
    
     // riks of capture per unit effort
     q_risk_g[g]         = inv_logit(log_q_g[g]);
