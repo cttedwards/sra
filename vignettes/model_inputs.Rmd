@@ -53,6 +53,7 @@ tab_nums <- captioner::captioner(prefix = "Table")
 
 \vfill
 ```{r, echo = TRUE, message = FALSE}
+library(sraUtils)
 library(sraInputs)
 
 data("methods")
@@ -87,11 +88,7 @@ overlap figure maps: can we have a line/violin plot per method showing distribut
 
 capture tables: need to distinguish between net and warp captures. can we include net/warp captures in map with different colors?
 
-years for fishery groups: data are lost as we go back in time.
-
 estimate catchability across all years; but captures for last 3 years only
-
-recode fishery group definitions to include year time frame
 
 flag instances in which overlap is zero but there are captures
 
