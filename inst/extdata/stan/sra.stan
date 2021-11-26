@@ -103,11 +103,7 @@ data {
   int<lower=0> captures_i[n_i];
   
   // Species capture type groups
-  // Large albatross to diving seabirds
   int capture_type_group_i[n_i];
-  // Trawl capture types
-  // 1: net; 2: warp; 3: other; -1: unknown
-  int capture_type_i[n_i];
 
   // All fishing events
   int<lower=1> n_j; // number of observed and unobserved fishing events
@@ -147,8 +143,7 @@ parameters {
   vector[n_fishery_group] beta_live_capture_fg;
   vector[n_species_group] beta_live_capture_sg;
   
-  vector<lower=0,upper=1>[n_species-sum(n_breeding_pairs_type)] n_breeding_pairs_raw1_s; // log-uniform
-  vector<lower=0>[sum(n_breeding_pairs_type)] n_breeding_pairs_raw2_s; // log-normal
+  vector<lower=0>[n_species] n_breeding_pairs_raw_s; 
   vector[n_species] p_breeding_raw_s; // logit-normal
   
   simplex[n_capture_type] p_capture_type_t[n_capture_type_group];
@@ -236,21 +231,18 @@ transformed parameters {
   
   // predicted biological parameters
   {
-    int c1 = 1;
-    int c2 = 1;
-
+    real L;
+    real U;
+      
     for (s in 1:n_species) {
-      real L;
-      real U;
+      
       // N_BP: 0=log-uniform or 1=lognormal
       if (n_breeding_pairs_type[s] == 0) {
         L = log(n_breeding_pairs_p1[s]);
 	    U = log(n_breeding_pairs_p2[s]);
-        n_breeding_pairs_s[s] = exp(L + (U - L) * n_breeding_pairs_raw1_s[c1]);
-        c1 = c1 + 1;
+        n_breeding_pairs_s[s] = exp(L + (U - L) * n_breeding_pairs_raw_s[s]);
       } else {
-        n_breeding_pairs_s[s] = n_breeding_pairs_raw2_s[c2];
-        c2 = c2 + 1;
+        n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
       }
       // P_B: logit-normal
       p_breeding_s[s] = inv_logit(p_breeding_raw_s[s]);
@@ -311,7 +303,7 @@ model {
         if (n_breeding_pairs_type[s] == 1) {
           mu = n_breeding_pairs_p1[s];
           sigma = n_breeding_pairs_p2[s];
-          n_breeding_pairs_raw2_s[c1] ~ lognormal(log(mu), sigma);
+          n_breeding_pairs_raw_s[c1] ~ lognormal(log(mu), sigma);
           c1 = c1 + 1;
         }
         
@@ -711,7 +703,7 @@ generated quantities {
   traces[3] = vector_norm(log_q_species_raw);
   traces[4] = tau;
   traces[5] = vector_norm(append_row(beta_live_capture_fg, beta_live_capture_sg));
-  traces[6] = vector_norm(append_row(n_breeding_pairs_raw1_s, n_breeding_pairs_raw2_s));
+  traces[6] = vector_norm(n_breeding_pairs_raw_s);
   traces[7] = vector_norm(p_breeding_raw_s);
   
 } // end of generated quantities
