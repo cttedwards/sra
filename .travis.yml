@@ -12,6 +12,7 @@ r_packages:
     - roxygen2
     
 r_github_packages:
+  - cttedwards/sraUtils
   - cttedwards/sraInputs
   - cttedwards/sraInputsBio
 
