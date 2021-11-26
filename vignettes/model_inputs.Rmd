@@ -525,8 +525,8 @@ overlap_o <- overlap_o %>%
   select(species, method, id_method, month, id_fishing_group, id_species, id_species_group, id_capture_type_group, overlap)
 
 # get captures by status (alive / dead)
-cap_alive  <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "capture_status", condition = "alive") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
-cap_dead   <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "capture_status", condition = "dead")  %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
+cap_alive  <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_status", condition = "alive") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
+cap_dead   <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_status", condition = "dead")  %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
 cap_status <- full_join(cap_alive, cap_dead, by = c("species", "id_method", "id_fishing_group", "month"), suffix = c("_alive", "_dead"))
 cap_status <- cap_status %>% mutate(n_captures = n_captures_alive + n_captures_dead)
 
