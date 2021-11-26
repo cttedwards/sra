@@ -61,7 +61,7 @@ data {
   int n_capture_type; // 3
   int n_capture_type_group; // 5
   
-  int<lower=1,upper=n_capture_type> capture_type_group_s[n_species];
+  int<lower=1,upper=n_capture_type_group> capture_type_group_s[n_species];
 
   // Biological priors
   // N_BP
