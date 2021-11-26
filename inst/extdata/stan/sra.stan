@@ -65,7 +65,7 @@ data {
 
   // Biological priors
   // N_BP
-  int<lower=0,upper=1> n_breeding_pairs_type[n_species];
+  int<lower=0,upper=2> n_breeding_pairs_type[n_species];
   vector<lower=0>[n_species] n_breeding_pairs_p1;
   vector<lower=0>[n_species] n_breeding_pairs_p2;
   // P_B
