@@ -11,7 +11,8 @@ LazyData: true
 VignetteBuilder: knitr
 Depends:
     R (>= 4.0.2),
-    rstan (>= 2.21.0)
+    rstan (>= 2.21.0),
+    sraUtils (>= 1.0.0)
 Suggests:
     markdown,
     rmarkdown (>= 2.6),
