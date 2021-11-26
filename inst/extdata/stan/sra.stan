@@ -373,7 +373,7 @@ generated quantities {
   // (probability of capture)
   matrix[n_species, n_fishery_group] vulnerability_sg;
   // (probability of observation)
-  matrix<lower=0,upper=1>[n_species, n_fishery_group] p_observable_sg;
+  matrix[n_species, n_fishery_group] p_observable_sg;
 
   // Captures and deaths
   vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
@@ -454,7 +454,7 @@ generated quantities {
             // Longline
             if (idx_method_fg[g] == 1 || idx_method_fg[g] == 2) {
                 
-                cm = lognormal_rng(log(cm_longline_par1[s]), cm_longline_par2[s]);
+                cm = cm_longline_par1[s] > 0 ? lognormal_rng(log(cm_longline_par1[s]), cm_longline_par2[s]) : 1.0;
                 
                 vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg[s,g] + (1 - p_live_capture_sg[s,g]) * cm);
                 
@@ -475,12 +475,12 @@ generated quantities {
                 vulnerability_sg[s,g] = q_sg[s,g] * p_live_capture_sg[s,g];
                 
                 // Net
-                cm = 1.0 + lognormal_rng(log(cm_net_par1[s]), cm_net_par2[s]);
+                cm = 1.0 + cm_net_par1[s] > 0 ? lognormal_rng(log(cm_net_par1[s]), cm_net_par2[s]) : 0.0;
                 
                 vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg[s,g]) * p_capture_type_t[capture_type_group_s[s], 1] * cm;
                 
                 // Warp
-                cm = lognormal_rng(log(cm_warp_par1[s]), cm_warp_par2[s]);
+                cm = cm_warp_par1[s] > 0 ? lognormal_rng(log(cm_warp_par1[s]), cm_warp_par2[s]) : 1.0;
                 
                 vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg[s,g]) * p_capture_type_t[capture_type_group_s[s], 2] * cm;
                 
