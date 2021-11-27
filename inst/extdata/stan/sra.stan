@@ -22,7 +22,7 @@ functions {
 	    return pow(i, 0.5);
   }
   
-  /*
+    /*
 	* Return the number of non-zero elements in an
 	* integer vector
 	*/
@@ -35,21 +35,19 @@ functions {
 	}
 
 } // end of functions
-
-
 data {
 
   // Dimensions
-  int<lower=1> n_species; // the number of species (71)
-  int          n_month; // (12)
-  int<lower=1> n_method; // the number of fishing methods (4)
-  int<lower=n_method>                n_fishery_group; // the number of fishery groups (19)
-  int<lower=1,upper=n_species>       n_species_group; // the number of species groups (30)
-  int<lower=1>                       n_fishery_group_m[n_method]; // the number of fishery groups for each method
-  int<lower=1>                       idx_method_fg[n_fishery_group]; // index vector indcating which method applies to which group
+  int n_species;                      // number of species (71)
+  int n_month;                        // number of months (12)
+  int n_method;                       // number of fishing methods (4)
+  int n_fishery_group;                // number of fishery groups
+  int n_species_group;                // number of species groups
+  int n_fishery_group_m[n_method];    // number of fishery groups for each method
+  int idx_method_fg[n_fishery_group]; // index vector indcating which method applies to which group
+  int n_capture_type;                 // number of trawl capture types (3)
+  int n_capture_type_group;           // number of trawl capture type groups
   
-  int<lower=1,upper=n_species_group> species_group_s[n_species]; // species groups for vulnerability
-
   // Cryptic mortality multipliers (log-normal)
   vector[n_species] cm_longline_par1;
   vector[n_species] cm_longline_par2;
@@ -58,10 +56,9 @@ data {
   vector[n_species] cm_net_par1;
   vector[n_species] cm_net_par2;
   
-  int n_capture_type; // 3
-  int n_capture_type_group; // 5
-  
-  int<lower=1,upper=n_capture_type_group> capture_type_group_s[n_species];
+  // structural groups per species
+  int<lower=1,upper=n_species_group>      species_group_s[n_species];      // species groups for vulnerability
+  int<lower=1,upper=n_capture_type_group> capture_type_group_s[n_species]; // species groups for capture type
 
   // Biological priors
   // N_BP
@@ -82,19 +79,23 @@ data {
   int<lower=0,upper=1> adult_survival_opt_type[n_species];
   vector<lower=0>[n_species] adult_survival_opt_p1;
   vector<lower=0>[n_species] adult_survival_opt_p2;
+  
+  // Biological covariates
   // p_EEZ
   matrix[n_species, n_month] p_eez;
   // p_nest
   matrix[n_species, n_month] p_nest;
   
   // Observed fishing events
-  int<lower=1> n_i; // number of observed fishing events
-  int<lower=1,upper=n_month> month_i[n_i];
-  int<lower=1,upper=n_method> method_i[n_i]; // BLL, SLL, SN, trawl
-  int<lower=1,upper=n_fishery_group> fishery_group_i[n_i];
-  int<lower=1,upper=n_species> species_i[n_i];
-  int<lower=1,upper=n_species_group> species_group_i[n_i];
-  vector<lower=0>[n_i] overlap_i;
+  int<lower=1>                            n_i; 
+  int<lower=1,upper=n_month>              month_i[n_i];
+  int<lower=1,upper=n_method>             method_i[n_i]; 
+  int<lower=1,upper=n_fishery_group>      fishery_group_i[n_i];
+  int<lower=1,upper=n_species>            species_i[n_i];
+  int<lower=1,upper=n_species_group>      species_group_i[n_i];
+  int<lower=1,upper=n_capture_type_group> capture_type_group_i[n_i];
+  
+  // Observed captures per event
   int<lower=0> live_captures_i[n_i];
   int<lower=0> dead_captures_i[n_i];
   int<lower=0> net_captures_i[n_i];
@@ -102,25 +103,27 @@ data {
   int<lower=0> other_captures_i[n_i];
   int<lower=0> captures_i[n_i];
   
-  // Species capture type groups
-  int capture_type_group_i[n_i];
-
-  // All fishing events
-  int<lower=1> n_j; // number of observed and unobserved fishing events
-  int<lower=1,upper=n_month> month_j[n_j];
-  int<lower=1,upper=n_method> method_j[n_j]; // BLL, SLL, SN, trawl
-  int<lower=1,upper=n_fishery_group> fishery_group_j[n_j];
-  int<lower=1,upper=n_species> species_j[n_j];
-  int<lower=1,upper=n_species_group> species_group_j[n_j];
-  vector<lower=0>[n_j] overlap_j;
+  // Observed density overlap
+  vector<lower=0>[n_i] overlap_i;
   
+  // All fishing events
+  int<lower=1>                       n_j; 
+  int<lower=1,upper=n_month>         month_j[n_j];
+  int<lower=1,upper=n_method>        method_j[n_j];
+  int<lower=1,upper=n_fishery_group> fishery_group_j[n_j];
+  int<lower=1,upper=n_species>       species_j[n_j];
+  int<lower=1,upper=n_species_group> species_group_j[n_j];
+  
+  // Total density overlap
+  vector<lower=0>[n_j] overlap_j;
+
+  // Data years
   real<lower=1> n_years;
 
+  // PST tuning parameter
   real<lower=0,upper=1> psi;
 
 } // end of data
-
-
 transformed data {
 
   real x_r[0];
@@ -129,28 +132,32 @@ transformed data {
   y_guess[1] = 1.0;
 
 } // end of transformed data
-
-
 parameters {
 
-  vector[n_method] log_q_intercept;
-  vector[n_fishery_group-n_method] log_q_method_raw;
-  vector[n_species_group-1] log_q_species_raw;
+  // catchability predictors
+  vector[n_method]                   log_q_intercept;
+  vector[n_fishery_group - n_method] log_q_method_raw;
+  vector[n_species_group - 1]        log_q_species_raw;
   
+  // catchability
+  // random effect
   real<lower=0> tau;
-  matrix[n_fishery_group,n_species] eps_gs;
+  matrix[n_fishery_group,n_species_group] eps_gz;
 
-  vector[n_fishery_group] beta_live_capture_fg;
-  vector[n_species_group] beta_live_capture_sg;
+  // Predictors of live capture
+  // probability
+  vector[n_fishery_group] beta_live_capture_g;
+  vector[n_species_group] beta_live_capture_z;
   
-  vector<lower=0>[n_species] n_breeding_pairs_raw_s; 
-  vector[n_species] p_breeding_raw_s; // logit-normal
+  // Predictors of biological values
+  vector[n_species] n_breeding_pairs_raw_s; 
+  vector[n_species] p_breeding_raw_s;
   
+  // Distribution of trawl captures across capture types
+  // per capture type group
   simplex[n_capture_type] p_capture_type_t[n_capture_type_group];
   
 } // end of parameters
-
-
 transformed parameters {
 
   // catchability (probability of
@@ -171,10 +178,10 @@ transformed parameters {
   vector<lower=0>[n_month]   n_vuln_adults_s[n_species];
   vector<lower=0,upper=1>[n_species] p_breeding_s;
   
-  // expected captures
-  vector[n_i] mu_observed_captures_i;
-  vector[n_i] mu_live_captures_i;
-  vector[n_i] mu_dead_captures_i;
+  // expected observed captures
+  vector<lower=0>[n_i] mu_observed_captures_i;
+  vector<lower=0>[n_i] mu_live_captures_i;
+  vector<lower=0>[n_i] mu_dead_captures_i;
 
   // Species group vulnerability expressed in log-space 
   // and forced to sum to zero
@@ -217,33 +224,25 @@ transformed parameters {
     // back transform catchability onto natural scale
     for (g in 1:n_fishery_group) {
       for (s in 1:n_species) {
-        q_sg[s,g] = exp(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gs[g,s]);
+        q_sg[s,g] = exp(log_q_z[species_group_s[s]] + log_q_g[g] + eps_gz[g,species_group_s[s]]);
       }
     }
     
     // probability of live capture as a function of coefficients
     for (g in 1:n_fishery_group) {
       for (z in 1:n_species_group) {
-        p_live_capture_zg[z,g] = inv_logit(beta_live_capture_fg[g] + beta_live_capture_sg[z]);
+        p_live_capture_zg[z,g] = inv_logit(beta_live_capture_g[g] + beta_live_capture_z[z]);
       }
     }
   }
   
   // predicted biological parameters
   {
-    real L;
-    real U;
-      
     for (s in 1:n_species) {
       
-      // N_BP: 0=log-uniform or 1=lognormal
-      if (n_breeding_pairs_type[s] == 0) {
-        L = log(n_breeding_pairs_p1[s]);
-	    U = log(n_breeding_pairs_p2[s]);
-        n_breeding_pairs_s[s] = exp(L + (U - L) * n_breeding_pairs_raw_s[s]);
-      } else {
-        n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
-      }
+      // N_BP:
+      n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
+      
       // P_B: logit-normal
       p_breeding_s[s] = inv_logit(p_breeding_raw_s[s]);
       
@@ -272,56 +271,61 @@ transformed parameters {
         mu_dead_captures_i[i] = mu_observed_captures_i[i] * (1.0 - p_live_captures_i[i]);
       }
   }
-
 } // end of transformed parameters
 
 
 model {
 
   // priors on catchability parameters
-  log_q_intercept   ~ normal(0.0, 10.0);
-  log_q_method_raw  ~ normal(0.0, 2.0);
-  log_q_species_raw ~ normal(0.0, 2.0);
+  log_q_intercept   ~ std_normal();
+  log_q_method_raw  ~ std_normal();
+  log_q_species_raw ~ std_normal();
 
   // random effects error
   // on catchability
   for (g in 1:n_fishery_group) {
-    eps_gs[g] ~ normal(0.0, tau);
+    eps_gz[g] ~ normal(0.0, tau); // to_vector
   }
   tau ~ cauchy(0.0, 1.0);
   
   // priors on estimated biological 
   // parameters
   {
-      int c1 = 1;
-      real mu;
-      real sigma;
+      real parA;
+      real parB;
       
       for (s in 1:n_species) {
+          
+        parA = n_breeding_pairs_p1[s];
+        parB = n_breeding_pairs_p2[s];
 
-        // N_BP: 0=log-uniform or 1=lognormal
+        // N_BP:
+        if (n_breeding_pairs_type[s] == 0) {
+          n_breeding_pairs_raw_s[s] ~ uniform(parA, parB);
+        }
         if (n_breeding_pairs_type[s] == 1) {
-          mu = n_breeding_pairs_p1[s];
-          sigma = n_breeding_pairs_p2[s];
-          n_breeding_pairs_raw_s[c1] ~ lognormal(log(mu), sigma);
-          c1 = c1 + 1;
+          n_breeding_pairs_raw_s[s] ~ lognormal(log(parA) - square(parB) / 2, parB);
+        }
+        if (n_breeding_pairs_type[s] == 2) {
+          n_breeding_pairs_raw_s[s] ~ normal(parA, parB);
         }
         
-        // P_B - logit-normal
-        mu = p_breeding_p1[s];
-        sigma = p_breeding_p2[s];
-        p_breeding_raw_s[s] ~ normal(logit(mu), sigma / (mu * (1.0 - mu)));
+        // P_B:
+        parA = p_breeding_p1[s];
+        parB = p_breeding_p2[s];
+        p_breeding_raw_s[s] ~ normal(logit(parA), parB / (parA * (1.0 - parA)));
+        target += - log(p_breeding_s[s]) - log(1 - p_breeding_s[s]);
       }
   }
 
   // priors on live capture coefficients
-  beta_live_capture_fg ~ logistic(0.0, 1.0);
-  beta_live_capture_sg ~ logistic(0.0, 1.0);
+  beta_live_capture_g ~ std_normal();
+  beta_live_capture_z ~ std_normal();
 
   // likelihood for total observed captures
   captures_i ~ poisson(mu_observed_captures_i);
   
-  // likelihood for conditional live capture
+  // likelihood for live capture
   // given capture   
   for (i in 1:n_i) {
       if (captures_i[i] > 0) {
@@ -330,6 +334,7 @@ model {
   }
   
   // likelihood for trawl capture types
+  // given capture
   for (i in 1:n_i) {
       if (method_i[i] == 4) {
           
@@ -344,27 +349,22 @@ model {
       }
   }
 } // end of model
-
-
 generated quantities {
 
   // summary traces
   vector[7] traces;
   
-  // priors
-  real prior_tau;
-  vector[n_fishery_group] prior_beta_live_capture_fg;
-  vector[n_species_group] prior_beta_live_capture_sg;
-  matrix[n_species_group,n_fishery_group] prior_p_live_capture_zg;
-  vector[n_species] prior_n_breeding_pairs_s;
-  vector[n_species] prior_p_breeding_s;
-  vector[n_species] prior_n_adults_s;
-  matrix[n_species,n_fishery_group] prior_p_live_capture_sg;
+  // Priors for biological parameters
+  vector[n_species] prior_n_breeding_pairs_raw_s; 
+  vector[n_species] prior_p_breeding_raw_s;
   
-  vector<lower=0,upper=1>[n_fishery_group] p_live_capture_sg[n_species];
+  // priors for derived biological parameters
+  vector<lower=0>[n_species] prior_n_breeding_pairs_s;
+  vector<lower=0>[n_species] prior_n_adults_s;
+  vector<lower=0>[n_month]   prior_n_vuln_adults_s[n_species];
+  vector<lower=0,upper=1>[n_species] prior_p_breeding_s;
 
   // posterior predictive checking
-  real p_survive_capture;
   vector[n_i] observed_captures_i;
   vector[n_i] observed_live_captures_i;
   vector[n_i] observed_dead_captures_i;
@@ -419,44 +419,22 @@ generated quantities {
   matrix[n_species,n_method]        risk_ratio_sm;
   matrix[n_species,n_fishery_group] risk_ratio_sg;
   
-  vector[n_species]                 q_risk_s;
-  vector[n_method]                  q_risk_m;
-  vector[n_fishery_group]           q_risk_g;
-  
-  // Prior checking and simulated parameters
-  prior_tau = cauchy_rng(0.0, 1.0);
-  for (g in 1:n_fishery_group) {
-    prior_beta_live_capture_fg[g] = logistic_rng(0.0, 1.0);
-  }
-  for (s in 1:n_species_group) {
-    prior_beta_live_capture_sg[s] = logistic_rng(0.0, 1.0);
-  }
-  for (g in 1:n_fishery_group) {
-    for (z in 1:n_species_group) {
-      prior_p_live_capture_zg[z,g] = inv_logit(prior_beta_live_capture_fg[g] + prior_beta_live_capture_sg[z]);
-    }
-  }
-  for(s in 1:n_species){
-    for(g in 1:n_fishery_group){
-        prior_p_live_capture_sg[s,g] = prior_p_live_capture_zg[species_group_s[s],g];
-    }
-  }
-  
   // calculate vulnerability
   {
       real cm;
+      real p_live_capture_sg;
       
       for(s in 1:n_species){
         for(g in 1:n_fishery_group){
             
-            p_live_capture_sg[s,g] = p_live_capture_zg[species_group_s[s],g];
+            p_live_capture_sg = p_live_capture_zg[species_group_s[s],g];
             
             // Longline
             if (idx_method_fg[g] == 1 || idx_method_fg[g] == 2) {
                 
                 cm = cm_longline_par1[s] > 0 ? lognormal_rng(log(cm_longline_par1[s]), cm_longline_par2[s]) : 1.0;
                 
-                vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg[s,g] + (1 - p_live_capture_sg[s,g]) * cm);
+                vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg + (1 - p_live_capture_sg) * cm);
                 
             } else { 
             
@@ -465,35 +443,83 @@ generated quantities {
                 
                 cm = 1.0;
                 
-                vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg[s,g] + (1 - p_live_capture_sg[s,g]) * cm);
+                vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg + (1 - p_live_capture_sg) * cm);
                 
             } else { 
             
             // Trawl
             if (idx_method_fg[g] == 4) {
                 
-                vulnerability_sg[s,g] = q_sg[s,g] * p_live_capture_sg[s,g];
+                vulnerability_sg[s,g] = q_sg[s,g] * p_live_capture_sg;
                 
                 // Net
                 cm = 1.0 + cm_net_par1[s] > 0 ? lognormal_rng(log(cm_net_par1[s]), cm_net_par2[s]) : 0.0;
                 
-                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg[s,g]) * p_capture_type_t[capture_type_group_s[s], 1] * cm;
+                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg) * p_capture_type_t[capture_type_group_s[s], 1] * cm;
                 
                 // Warp
                 cm = cm_warp_par1[s] > 0 ? lognormal_rng(log(cm_warp_par1[s]), cm_warp_par2[s]) : 1.0;
                 
-                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg[s,g]) * p_capture_type_t[capture_type_group_s[s], 2] * cm;
+                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg) * p_capture_type_t[capture_type_group_s[s], 2] * cm;
                 
                 // Other
                 cm = 1.0;
                 
-                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg[s,g]) * p_capture_type_t[capture_type_group_s[s], 3] * cm;
+                vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg) * p_capture_type_t[capture_type_group_s[s], 3] * cm;
             }}}
             
             p_observable_sg[s,g] = q_sg[s,g] / vulnerability_sg[s,g];
         }
       }
   }
+  
+  // Generate priors
+  {
+      real parA;
+      real parB;
+      
+      // raw values
+      for (s in 1:n_species) {
+          
+        parA = n_breeding_pairs_p1[s];
+        parB = n_breeding_pairs_p2[s];
+
+        // N_BP:
+        if (n_breeding_pairs_type[s] == 0) {
+          prior_n_breeding_pairs_raw_s[s] = uniform_rng(parA, parB);
+        }
+        if (n_breeding_pairs_type[s] == 1) {
+          prior_n_breeding_pairs_raw_s[s] = lognormal_rng(log(parA) - square(parB) / 2, parB);
+        }
+        if (n_breeding_pairs_type[s] == 2) {
+          prior_n_breeding_pairs_raw_s[s] = normal_rng(parA, parB);
+        }
+
+        // P_B:
+        parA = p_breeding_p1[s];
+        parB = p_breeding_p2[s];
+        prior_p_breeding_raw_s[s] = normal_rng(logit(parA), parB / (parA * (1.0 - parA)));
+      }
+      
+      // derived values
+      for (s in 1:n_species) {
+
+        // N_BP:
+        prior_n_breeding_pairs_s[s] = prior_n_breeding_pairs_raw_s[s];
+
+        // P_B: logit-normal
+        prior_p_breeding_s[s] = inv_logit(prior_p_breeding_raw_s[s]);
+
+        // N_adults (per annum)
+        prior_n_adults_s[s] = 2.0 * prior_n_breeding_pairs_s[s] / prior_p_breeding_s[s];
+
+        // N_vuln_adults (per species and month)
+        for(m in 1:n_month){
+          prior_n_vuln_adults_s[s, m] = prior_n_adults_s[s] * p_eez[s, m] * (1 - prior_p_breeding_s[s] * p_nest[s, m]);
+        }
+      }
+  }
+  
   
   {
       real mu;
@@ -502,24 +528,7 @@ generated quantities {
       vector[1] lambda_max;
         
       for (s in 1:n_species) {
-        
-        // N_BP - log-uniform or log-normal
-        mu = n_breeding_pairs_p1[s];
-        sigma = n_breeding_pairs_p2[s];
-        if (n_breeding_pairs_type[s] == 0) {
-          prior_n_breeding_pairs_s[s] = exp(uniform_rng(log(mu), log(sigma)));
-        } else {
-          prior_n_breeding_pairs_s[s] = lognormal_rng(log(mu), sigma);
-        }
-        
-        // P_B - logit normal
-        mu = p_breeding_p1[s];
-        sigma = p_breeding_p2[s];
-        prior_p_breeding_s[s] = inv_logit(normal_rng(logit(mu), sigma / (mu * (1.0 - mu))));
-        
-        // N_adults
-        prior_n_adults_s[s] = 2.0 * n_breeding_pairs_s[s] / prior_p_breeding_s[s];
-        
+          
         // S_curr - uniform or logit-normal
         mu = adult_survival_current_p1[s];
         sigma = adult_survival_current_p2[s];
@@ -540,9 +549,6 @@ generated quantities {
         
         // A_curr - uniform
         age_breeding_current_s[s] = uniform_rng(age_breeding_current_p1[s], age_breeding_current_p2[s]);
-
-        // not sure what this is
-        p_survive_capture = uniform_rng(0, 1);
 
         // PST
         theta[1] = age_breeding_current_s[s];
@@ -596,7 +602,7 @@ generated quantities {
         // expected observable deaths per year
         mu_observable_deaths_j = mu_observable_captures_j * (1.0 - p_live_captures_j);
         
-        // simulate obsered captures and deaths
+        // simulate observable captures and deaths
         if (mu_observable_captures_j > 0) {
             
             // posterior prediction of average total captures and deaths
@@ -618,7 +624,7 @@ generated quantities {
         mu_captures_j = vulnerability_sg[species_j[j], fishery_group_j[j]] * density_overlap_j / n_years;
         
         // expected total deaths per year (observed + unobserved)
-        mu_deaths_j = mu_captures_j * (1.0 - p_live_captures_j * p_survive_capture);
+        mu_deaths_j = mu_captures_j * (1.0 - p_live_captures_j);
         
         // simulate total captures and deaths
         if (mu_captures_j > 0) {
@@ -654,9 +660,6 @@ generated quantities {
     // risk per species
     risk_ratio_s[s]     = deaths_s[s] / pst_s[s];
     
-    // riks of capture per unit effort
-    q_risk_s[s] = inv_logit(mean(log_q_intercept) + log_q_z[species_group_s[s]]);
-    
     for (m in 1:n_method) {
       risk_ratio_sm[s,m] = deaths_sm[s,m] / pst_s[s];
     }
@@ -668,18 +671,12 @@ generated quantities {
   // summary results by method
   for (m in 1:n_method) {
     
-    // riks of capture per unit effort
-    q_risk_m[m]         = inv_logit(log_q_intercept[m]);
-    
     // mean risk accross species weighted by species-specific deaths
     risk_ratio_m[m] = sum((to_vector(risk_ratio_sm[,m]) .* deaths_s) / sum(deaths_s));
   }
   
   // summary results by fishery_group
   for (g in 1:n_fishery_group) {
-   
-    // riks of capture per unit effort
-    q_risk_g[g]         = inv_logit(log_q_g[g]);
     
     // mean risk accross species weighted by species-specific deaths
     risk_ratio_g[g] = sum((to_vector(risk_ratio_sg[,g]) .* deaths_s) / sum(deaths_s));
@@ -702,7 +699,7 @@ generated quantities {
   traces[2] = vector_norm(log_q_method_raw);
   traces[3] = vector_norm(log_q_species_raw);
   traces[4] = tau;
-  traces[5] = vector_norm(append_row(beta_live_capture_fg, beta_live_capture_sg));
+  traces[5] = vector_norm(append_row(beta_live_capture_g, beta_live_capture_z));
   traces[6] = vector_norm(n_breeding_pairs_raw_s);
   traces[7] = vector_norm(p_breeding_raw_s);
   
