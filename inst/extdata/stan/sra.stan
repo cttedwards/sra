@@ -102,6 +102,7 @@ data {
   int<lower=0> warp_captures_i[n_i];
   int<lower=0> other_captures_i[n_i];
   int<lower=0> captures_i[n_i];
+  int<lower=0> captures_method_i[n_i];
   
   // Observed density overlap
   vector<lower=0>[n_i] overlap_i;
@@ -182,6 +183,8 @@ transformed parameters {
   vector<lower=0>[n_i] mu_observed_captures_i;
   vector<lower=0>[n_i] mu_live_captures_i;
   vector<lower=0>[n_i] mu_dead_captures_i;
+  vector<lower=0>[n_i] mu_net_captures_i;
+  vector<lower=0>[n_i] mu_warp_captures_i;
 
   // Species group vulnerability expressed in log-space 
   // and forced to sum to zero
@@ -241,7 +244,15 @@ transformed parameters {
     for (s in 1:n_species) {
       
       // N_BP:
-      n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
+      if (n_breeding_pairs_type[s] == 0) {
+          n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
+        }
+        if (n_breeding_pairs_type[s] == 1) {
+          n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
+        }
+        if (n_breeding_pairs_type[s] == 2) {
+          n_breeding_pairs_s[s] = n_breeding_pairs_raw_s[s];
+        }
       
       // P_B: logit-normal
       p_breeding_s[s] = inv_logit(p_breeding_raw_s[s]);
@@ -269,6 +280,9 @@ transformed parameters {
         
         mu_live_captures_i[i] = mu_observed_captures_i[i] * p_live_captures_i[i];
         mu_dead_captures_i[i] = mu_observed_captures_i[i] * (1.0 - p_live_captures_i[i]);
+        
+        mu_net_captures_i[i]  = mu_observed_captures_i[i] * p_capture_type_t[capture_type_group_i[i], 1];
+        mu_warp_captures_i[i] = mu_observed_captures_i[i] * p_capture_type_t[capture_type_group_i[i], 2];
       }
   }
 } // end of transformed parameters
@@ -301,7 +315,7 @@ model {
 
         // N_BP:
         if (n_breeding_pairs_type[s] == 0) {
-          n_breeding_pairs_raw_s[s] ~ uniform(parA, parB);
+          n_breeding_pairs_raw_s[s] ~ normal((parA + parB) / 2, 10) T[parA,parB]; //uniform(parA, parB);
         }
         if (n_breeding_pairs_type[s] == 1) {
           n_breeding_pairs_raw_s[s] ~ lognormal(log(parA) - square(parB) / 2, parB);
@@ -314,7 +328,8 @@ model {
         parA = p_breeding_p1[s];
         parB = p_breeding_p2[s];
         p_breeding_raw_s[s] ~ normal(logit(parA), parB / (parA * (1.0 - parA)));
-        target += - log(p_breeding_s[s]) - log(1 - p_breeding_s[s]);
+        // Jacobian
+        //target += - log(p_breeding_s[s]) - log(1 - p_breeding_s[s]);
       }
   }
 
@@ -338,13 +353,11 @@ model {
   for (i in 1:n_i) {
       if (method_i[i] == 4) {
           
-          int captures_method_i = net_captures_i[i] + warp_captures_i[i] + other_captures_i[i];
+          if (captures_i[i] > 0) {
           
-          if (captures_method_i > 0) {
-          
-            net_captures_i[i]   ~ binomial(captures_method_i, p_capture_type_t[capture_type_group_i[i], 1]);
-            warp_captures_i[i]  ~ binomial(captures_method_i, p_capture_type_t[capture_type_group_i[i], 2]);
-            other_captures_i[i] ~ binomial(captures_method_i, p_capture_type_t[capture_type_group_i[i], 3]);
+            net_captures_i[i]   ~ binomial(captures_i[i], p_capture_type_t[capture_type_group_i[i], 1]);
+            warp_captures_i[i]  ~ binomial(captures_i[i], p_capture_type_t[capture_type_group_i[i], 2]);
+            other_captures_i[i] ~ binomial(captures_i[i], p_capture_type_t[capture_type_group_i[i], 3]);
           }
       }
   }
@@ -368,6 +381,8 @@ generated quantities {
   vector[n_i] observed_captures_i;
   vector[n_i] observed_live_captures_i;
   vector[n_i] observed_dead_captures_i;
+  vector[n_i] observed_net_captures_i;
+  vector[n_i] observed_warp_captures_i;
   
   // back calculation of vulnerability
   // (probability of capture)
@@ -566,6 +581,8 @@ generated quantities {
     observed_captures_i[i]      = poisson_rng(mu_observed_captures_i[i]);
     observed_live_captures_i[i] = poisson_rng(mu_live_captures_i[i]);
     observed_dead_captures_i[i] = poisson_rng(mu_dead_captures_i[i]);
+    observed_net_captures_i[i]  = poisson_rng(mu_net_captures_i[i]);
+    observed_warp_captures_i[i] = poisson_rng(mu_warp_captures_i[i]);
     
     // sum captures
     observed_captures_s[species_i[i]]       += observed_captures_i[i];
