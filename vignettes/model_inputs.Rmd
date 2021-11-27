@@ -803,16 +803,17 @@ stopifnot(isTRUE(all(sra_dat$adult_survival_opt_type %in% 0:1)))
 
 ```{r}
 # initial values
-sra_ini <- list(log_q_intercept = rep(0, sra_dat$n_method),
+sra_ini <- list(log_q_intercept = rep(-10, sra_dat$n_method),
                 log_q_method_raw = rep(0, sra_dat$n_fishery_group - sra_dat$n_method),
                 log_q_species_raw = rep(0.0, sra_dat$n_species_group - 1),
                 tau = 1.0,
                 eps_gs = matrix(0.0, sra_dat$n_fishery_group, sra_dat$n_species),
                 beta_live_capture_fg = rep(2.0, sra_dat$n_fishery_group),
                 beta_live_capture_sg = rep(0.0, sra_dat$n_species_group),
-                n_breeding_pairs_raw1_s = rep(0.5, sra_dat$n_species - sum(sra_dat$n_breeding_pairs_type)),
-                n_breeding_pairs_raw2_s = rep(100, sum(sra_dat$n_breeding_pairs_type)),
-                p_breeding_raw_s = rep(2.5, sra_dat$n_species))
+                n_breeding_pairs_raw_s = ifelse(N_BP$distribution == 'log-uniform', (N_BP$par1 + N_BP$par2) / 2, N_BP$par1),
+                p_breeding_raw_s = rep(2.0, sra_dat$n_species))
+                
+#sra_ini$n_breeding_pairs_raw_s[sra_dat$n_breeding_pairs_type == 0] <- (sra_dat$n_breeding_pairs_p1[sra_dat$n_breeding_pairs_type == 0] + sra_dat$n_breeding_pairs_p2[sra_dat$n_breeding_pairs_type == 0]) / 2;
 ```
 
 ```{r}
