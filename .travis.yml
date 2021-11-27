@@ -8,6 +8,7 @@ latex: true
 r_packages:
     - utils
     - rstan
+    - raster
     - testthat
     - roxygen2
     
