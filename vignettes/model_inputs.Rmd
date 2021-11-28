@@ -66,6 +66,9 @@ data("cm_longline")
 
 species <- species_groups$code_sra
 names(species) <- species
+
+species_groups$species_group    <- species_groups$capture_type_group
+species_groups$id_species_group <- species_groups$id_capture_type_group
 ```
 
 ```{r, echo = TRUE, message = FALSE}
@@ -751,6 +754,9 @@ sra_dat <- list(n_species = length(species),
             n_breeding_pairs_type = ifelse(N_BP$distribution == 'log-uniform', 0, ifelse(N_BP$distribution == 'log-normal', 1, 2)),
             n_breeding_pairs_p1 = N_BP$par1,
             n_breeding_pairs_p2 = N_BP$par2,
+            n_breeding_pairs_type_0 = sum(N_BP$distribution == 'log-uniform'),
+            n_breeding_pairs_type_1 = sum(N_BP$distribution == 'log-normal'),
+            n_breeding_pairs_type_2 = sum(N_BP$distribution == 'normal'),
             p_breeding_p1 = P_B$par1,
             p_breeding_p2 = P_B$par2,
             age_breeding_current_p1 = A_curr$par1,
@@ -779,7 +785,7 @@ sra_dat <- list(n_species = length(species),
             warp_captures_i  = overlap_o$n_captures_warp,
             other_captures_i = overlap_o$n_captures_other,
             captures_i       = overlap_o$n_captures,
-            captures_method_i = overlap_o$n_captures_net + overlap_o$n_captures_warp + overlap_o$n_captures_other;
+            #captures_method_i = overlap_o$n_captures_net + overlap_o$n_captures_warp + overlap_o$n_captures_other;
                          
             n_j             = nrow(overlap_t),
             month_j         = overlap_t$month,
@@ -811,10 +817,11 @@ sra_ini <- list(log_q_intercept = rep(-10, sra_dat$n_method),
                 eps_gs = matrix(0.0, sra_dat$n_fishery_group, sra_dat$n_species),
                 beta_live_capture_fg = rep(2.0, sra_dat$n_fishery_group),
                 beta_live_capture_sg = rep(0.0, sra_dat$n_species_group),
-                n_breeding_pairs_raw_s = ifelse(N_BP$distribution == 'log-uniform', (N_BP$par1 + N_BP$par2) / 2, N_BP$par1),
+                #n_breeding_pairs_raw_s = ifelse(N_BP$distribution == 'log-uniform', (N_BP$par1 + N_BP$par2) / 2, N_BP$par1),
+                n_breeding_pairs_raw_0 = structure(with(subset(N_BP, distribution == 'log-uniform'), (par1 + par2) / 2), dim = sra_dat$n_breeding_pairs_type_0),
+                n_breeding_pairs_raw_1 = structure(with(subset(N_BP, distribution == 'log-normal'), par1), dim = sra_dat$n_breeding_pairs_type_1),
+                n_breeding_pairs_raw_2 = structure(with(subset(N_BP, distribution == 'normal'), par1), dim = sra_dat$n_breeding_pairs_type_2),
                 p_breeding_raw_s = rep(2.0, sra_dat$n_species))
-                
-#sra_ini$n_breeding_pairs_raw_s[sra_dat$n_breeding_pairs_type == 0] <- (sra_dat$n_breeding_pairs_p1[sra_dat$n_breeding_pairs_type == 0] + sra_dat$n_breeding_pairs_p2[sra_dat$n_breeding_pairs_type == 0]) / 2;
 ```
 
 ```{r}
