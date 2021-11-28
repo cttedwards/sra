@@ -154,9 +154,9 @@ parameters {
   vector[n_species_group] beta_live_capture_z;
   
   // Predictors of biological values
-  vector[n_breeding_pairs_type_0] n_breeding_pairs_raw_0; 
-  vector[n_breeding_pairs_type_1] n_breeding_pairs_raw_1;
-  vector[n_breeding_pairs_type_2] n_breeding_pairs_raw_2;
+  vector<lower=0,upper=1>[n_breeding_pairs_type_0] n_breeding_pairs_raw_0; 
+  vector<lower=0>[n_breeding_pairs_type_1] n_breeding_pairs_raw_1;
+  vector<lower=0>[n_breeding_pairs_type_2] n_breeding_pairs_raw_2;
   vector[n_species] p_breeding_raw_s;
   
   // Distribution of trawl captures across capture types
@@ -246,15 +246,21 @@ transformed parameters {
   
   // predicted biological parameters
   {
+      real parA;
+      real parB;
+      
       int k0 = 1;
       int k1 = 1;
       int k2 = 1;
       
       for (s in 1:n_species) {
+          
+        parA = n_breeding_pairs_p1[s];
+        parB = n_breeding_pairs_p2[s];
       
         // N_BP:
         if (n_breeding_pairs_type[s] == 0) {
-          n_breeding_pairs_s[s] = n_breeding_pairs_raw_0[k0];
+          n_breeding_pairs_s[s] = parA + (parB - parA) * n_breeding_pairs_raw_0[k0];
           k0 += 1;
         }
         if (n_breeding_pairs_type[s] == 1) {
@@ -333,7 +339,7 @@ model {
 
         // N_BP:
         if (n_breeding_pairs_type[s] == 0) {
-          n_breeding_pairs_raw_0[k0] ~ uniform(parA, parB);
+          n_breeding_pairs_raw_0[k0] ~ uniform(0, 1);
           k0 += 1;
         }
         if (n_breeding_pairs_type[s] == 1) {
