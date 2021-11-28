@@ -112,12 +112,12 @@ Finally, we use the observed fishing intensity $a^{\,\prime}_{j,m}$ and associat
 $$
 \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
 $$
-The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$), and $\omega_{j,z}$, which is the probability of a live capture surviving post-release. The probability of death is $\Psi_{j,z} \cdot (1 - \omega_{j,z}) + (1 - \Psi_{j,z})$, which can be simplified to predict the number of deaths and observed deaths:
+The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$). The probability of death is $1 - \Psi_{j,z}$, which can be used to predict the number of deaths and observed deaths:
 $$
-\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega_{j,z})
+\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z})
 $$
 $$
-\underbrace{\mathrm{observed\,deaths}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega_{j,z})
+\underbrace{\mathrm{observed\,deaths}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} )
 $$
 
 # Capture type
@@ -143,22 +143,24 @@ and the likelihood is:
 $$
 C^{\,\prime}_{j,s,m} \sim Poisson(\lambda_{j,s,m})
 $$
-For fishery groups with more than one capture type:
+For fishery groups with more than one capture type we include an additional likelihood component to estimate the distribution of captures across $t$ capture types:
 $$
-C^{\,\prime}_{t,j,s,m} \sim Poisson(\pi_t \cdot \lambda_{j,s,m})
+C^{\,\prime}_{t,j,s,m} \sim Binomial(C^{\,\prime}_{j,s,m}, \pi_t)
 $$
 
-The probability of death is included as a separate likelihood, using the number of observed live captures $L^{\,\prime}_{j,s,m} \leq C^{\,\prime}_{j,s,m}$:
+These likelihoods are identical to what would be calculated from first summing the captures and overlap across species within each species group. 
+
+The probability of death is alos included as a separate likelihood, using the number of observed live captures $L^{\,\prime}_{j,s,m} \leq C^{\,\prime}_{j,s,m}$:
 $$
 L^{\,\prime}_{j,s,m} \sim Binomial(C^{\,\prime}_{j,s,m}, \Psi_{j,z})
 $$
-The probabilities of post-release survival $\omega_{j,z}$ do not form part of the likelihood equations, since there are no data which could inform their estimation. Similarly for $p^{obs}_{k,s}$, which also do not form part of the likelihood. Instead $\omega_{j,z}$ and $p^{obs}_{k,s}$ are included as distributions, which allow the total number of deaths to be predicted with appropriate uncertainty.
+The probability of observation $p^{obs}_{k,s}$ does not form part of the likelihood, because there are no data provided to the model that would allow it to be estimated. Instead $p^{obs}_{k,s}$ is included as a distribution, which allow the total number of deaths to be predicted with appropriate uncertainty.
 
 The catchability is a function of method ($k$), fishery group ($j$) and species group ($z$) covariates:
 $$
-\mathrm{log}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{s,j}
+\mathrm{log}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{z,j}
 $$
-where $\varepsilon_{s,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
+where $\varepsilon_{z,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
 $$
 \mathrm{logit}(\Psi_{j,z}) = \gamma_j + \gamma_z
 $$
@@ -166,6 +168,36 @@ Coefficients $\gamma_j$ and $\gamma_z$ are constrained to sum to zero.
 
 ## Estimation
 All estimation was performed within a Bayesian framework using rstan [@stan2021].
+
+## Prediction of total captures and deaths
+
+During the estimation process we estimate the catchability $q_{j,s}$, but to estimate the total captures (both observed and unobserved) we need to calculate the vulnerability $\upsilon_{j,s}$. To do this we include a cryptic mortality multiplier $\kappa_{j,s}$ (equal to $1 / p^{obs}_{k,z}$) that is specific to the fishery group $j$ and the species $s$.
+
+We modify the capture equation:
+```{=tex}
+\begin{align*}
+C_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}\\
+&= q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot \kappa_{j,s}
+\end{align*}
+```
+by first assuming that only dead captures are cryptic:
+$$
+C_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})
+$$
+The probability of observation is therefore:
+$$
+p^{obs}_{k,z} = (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})^{-1}
+$$
+which imposes a lower bound on the cryptic mortality of $\kappa_{j,s} \geq 1$ (so that $0 \leq p^{obs}_{k,z} \leq 1$). The model also allows for multipliers to be capture type specific. If we estimate $\pi_t$ per capture type then:
+$$
+C_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot (\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots))
+$$
+with $(\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots) \geq 1$.
+
+Deaths are then equal to:
+$$
+D_{j,s,m} = C_{j,s,m} \cdot (1 - \Psi_{j,z})
+$$
 
 
 ```{=tex}
@@ -206,6 +238,7 @@ $P^{\mathrm{\,in\,eez}}_{s,m}$ & Probability of an adult being in the EEZ  \\
 $P^{\mathrm{\,on\,nest}}_{s,m}$ & Probability of a breeding adult being on the nest  \\
 $d(s,m,x)$ & Number of adults per km\textsuperscript{2}   \\
 $a_i$ & Fishing effort intensity  \\
+$\kappa_{j,s}$ & Cryptic mortality multiplier  \\
 &\\
 \multicolumn{2}{l}{\textbf{Derived covariates}}\\
 $p_{i,s,m}$ & Proprtionate number of individuals available to fishing   \\
