@@ -738,6 +738,7 @@ sra_dat <- list(n_species = length(species),
             n_capture_type_group = 5,
             n_fishery_group = nrow(fishing_groups), 
             n_fishery_group_m = as.integer(table(fishing_groups$method)),
+            
             species_group_s = species_groups$id_species_group,
             
             capture_type_group_s = species_groups$id_capture_type_group,

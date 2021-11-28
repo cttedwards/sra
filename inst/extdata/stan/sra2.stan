@@ -310,9 +310,10 @@ model {
 
   // random effects error
   // on catchability
-  for (g in 1:n_fishery_group) {
-    eps_gz[g] ~ normal(0.0, tau); // to_vector
-  }
+  //for (g in 1:n_fishery_group) {
+  //  eps_gz[g] ~ normal(0.0, tau); // to_vector
+  //}
+  to_vector(eps_gz) ~ std_normal();
   tau ~ cauchy(0.0, 1.0);
   
   // priors on estimated biological 
