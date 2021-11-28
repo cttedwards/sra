@@ -6,6 +6,8 @@ pandoc: true
 latex: true
 
 r_packages:
+    - dplyr
+    - sf
     - utils
     - rstan
     - raster
