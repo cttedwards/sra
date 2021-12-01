@@ -320,7 +320,7 @@ model {
   //  eps_gz[g] ~ normal(0.0, tau); // to_vector
   //}
   to_vector(eps_gz) ~ normal(0.0, tau);
-  tau ~ cauchy(0.0, 1.0);
+  tau ~ std_normal();
   
   // priors on estimated biological 
   // parameters
@@ -414,8 +414,10 @@ generated quantities {
   // back calculation of vulnerability
   // (probability of capture)
   matrix[n_species, n_fishery_group] vulnerability_sg;
+  matrix[n_species_group, n_fishery_group] vulnerability_zg;
   // (probability of observation)
   matrix[n_species, n_fishery_group] p_observable_sg;
+  matrix[n_species_group, n_fishery_group] p_observable_zg;
 
   // Captures and deaths
   vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
@@ -515,6 +517,14 @@ generated quantities {
             }}}
             
             p_observable_sg[s,g] = q_sg[s,g] / vulnerability_sg[s,g];
+        }
+      }
+      
+      // Assign to species group
+      for(s in 1:n_species){
+        for(g in 1:n_fishery_group){
+            vulnerability_zg[species_group_s[s],g] =  vulnerability_sg[s,g];
+            p_observable_zg[species_group_s[s],g]  =  p_observable_sg[s,g];
         }
       }
   }
