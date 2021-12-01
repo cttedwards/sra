@@ -74,30 +74,6 @@ library(sraInputsPSC)
 data("capture_effort")
 ```
 
-### notes
-
-plot bubble plot of observed and total overlap per species group and fishery group (with different color per method). make observed overlap bubble within total overlap to indicate coverage. 
-
-figure 3: legend should say observed captures...
-
-overlap tables: remove total overlap because it is not helpful
-
-new table showing new and old overlap calculation per species only for species that have had new maps
-
-overlap figure maps: can we have a line/violin plot per method showing distribution of overlap across months?
-
-capture tables: need to distinguish between net and warp captures. can we include net/warp captures in map with different colors?
-
-estimate catchability across all years; but captures for last 3 years only
-
-flag instances in which overlap is zero but there are captures
-
-
-
-
-
-
-
 ```{r, echo = TRUE, message = FALSE}
 library(sraInputsBio)
 
@@ -130,7 +106,7 @@ The model includes `r n_fishing_years` years of data between `r min(fishing_year
 \captionsetup[figure]{labelformat=empty}
 ```
 
-Observed captures by species, species group, fishing group and method are shown in `r tab_nums("tab:captures1", display = "cite")`, `r tab_nums("tab:captures2", display = "cite")`, `r fig_nums("fig:captures1", display = "cite")`, `r fig_nums("fig:captures2", display = "cite")` and `r fig_nums("fig:captures3", display = "cite")`. The model assumes that captures are proportional to the density overlap (`r fig_nums("fig:overlap_o", display = "cite")`). The overlap provides a model input for fitting and prediction of captures, and is listed in `r tab_nums("tab:overlap_o", display = "cite")` and `r tab_nums("tab:overlap_t", display = "cite")`. When calculating the overlap, effort units are of a thousand hooks for bottom longline (BLL) and surface longline (SLL), km of net for set net (SN), and number of tows for trawl. Species specific maps of the summed density overlap and captures are also provided.
+Observed captures by species, species group, fishing group and method are shown in `r tab_nums("tab:captures1", display = "cite")`, `r tab_nums("tab:captures2", display = "cite")`, `r fig_nums("fig:captures1", display = "cite")`, `r fig_nums("fig:captures2", display = "cite")` and `r fig_nums("fig:captures3", display = "cite")`. The model assumes that captures are proportional to the density overlap. The overlap provides a model input for fitting and prediction of captures, and is listed in `r tab_nums("tab:overlap_o", display = "cite")` and `r tab_nums("tab:overlap_t", display = "cite")`. When calculating the overlap, effort units are of a thousand hooks for bottom longline (BLL) and surface longline (SLL), km of net for set net (SN), and number of tows for trawl. Species specific maps of the summed density overlap and captures are also provided.
 
 \clearpage
 ```{r, results = "asis", size = "scriptsize"}
@@ -209,7 +185,7 @@ methods <- methods %>% filter(include)
 ```
 
 ```{r, results = "asis", size = "scriptsize"}
-tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events. Fishing groups ", paste(fishing_groups_remove$fishing_group_label, collapse = " and "), " were not present in the data or were removed."))
+tab_cap <- tab_nums(name = "tab:fishing_groups", caption = paste0("Fishing methods (", nrow(methods), ") and fishing groups (", nrow(fishing_groups), "). Observed and total effort, and percentage coverage, are reported using the number of fishing events. Fishing groups ", paste(fishing_groups_remove$fishing_group_label, collapse = " and "), " were not present in the capture data or were removed."))
 
 tab <- dat %>% group_by(id_fishing_group) %>% 
   summarise(method = unique(method), 
@@ -292,7 +268,7 @@ pandoc.table(tab,
              col.names = c("Group name", names(tab)[2:6], "Rate per year"))
 ```
 
-`r fig_cap <- fig_nums(name = "fig:captures1", caption = "Observed captures per fishery group.")`
+`r fig_cap <- fig_nums(name = "fig:captures1", caption = "Observed captures per fishery group over years included in the model.")`
 
 ```{r, fig.cap = fig_cap}
 dfr <- dat %>% as.data.frame() %>%
@@ -306,10 +282,10 @@ ggplot(dfr) +
   geom_point(aes(x = fishing_year, y = fishing_group, size = n_captures, col = method), alpha = 0.4) + 
   scale_size(range = c(1, 20), name = "Captures (N)") + 
   scale_x_discrete(breaks = levels(dfr$fishing_year)[c(2, 4, 6, 8, 10, 12)]) + 
-  labs(x = "", y = "", col = "")
+  labs(x = "", y = "", col = "") + theme_bw(base_size = 18)
 ```
 
-`r fig_cap <- fig_nums(name = "fig:captures2", caption = "Observed captures per species group.")`
+`r fig_cap <- fig_nums(name = "fig:captures2", caption = "Observed captures per species group over years included in the model.")`
 
 ```{r, fig.cap = fig_cap}
 species_group_lookup <- with(species_groups, split(code_sra, species_group))
@@ -325,12 +301,12 @@ ggplot(dfr) +
   geom_point(aes(x = fishing_year, y = group, size = n_captures), alpha = 0.4) + 
   scale_size(range = c(1, 20), name = "Captures (N)") + 
   scale_x_discrete(breaks = levels(dfr$fishing_year)[c(2, 4, 6, 8, 10, 12)]) + 
-  labs(x = "", y = "", col = "")
+  labs(x = "", y = "", col = "") + theme_bw(base_size = 18)
 ```
 
 `r fig_cap <- fig_nums(name = "fig:captures3", caption = "Observed captures per species and fishery group combination.")`
 
-```{r, fig.cap = fig_cap, fig.height = 12}
+```{r, fig.cap = fig_cap, fig.height = 5}
 dfr <- dat %>% as.data.frame() %>%
   aggregate_captures("fishing_group_label", species_group_lookup)
 
@@ -340,9 +316,9 @@ dfr$group         <- factor(dfr$group, levels = rev(unique(species_groups$specie
 
 ggplot(dfr) + 
   geom_point(aes(x = fishing_group, y = group, size = n_captures), alpha = 0.4) + 
-  scale_size(range = c(1, 20), name = "Captures (N)") + 
+  scale_size(range = c(1, 20), name = "Captures (N)") + theme_bw(base_size = 18) + 
   theme(axis.text.x = element_text(angle = 90), axis.text = element_text(size = 16)) +
-  labs(x = "", y = "", col = "")
+  labs(x = "", y = "", col = "") 
 ```
 
 \clearpage
@@ -556,7 +532,7 @@ rm(observed_overlap)
 \newpage\clearpage
 
 ```{r, results = 'asis', size = 'scriptsize'}
-tab_cap <- tab_nums(name = "tab:overlap_o", caption = paste("Observed overlap by species for bottom-longline (BLL), surface-longline (SLL), set net (SN), and trawl fishing methods between ", min(fishing_years), " and ", max(fishing_years), "."))
+tab_cap <- tab_nums(name = "tab:overlap_o", caption = paste0("Observed overlap by species for bottom-longline (BLL), surface-longline (SLL), set net (SN), and trawl fishing methods between ", min(fishing_years), " and ", max(fishing_years), ". The summed overlap is only included as a diagnostic for construction of the data."))
 
 tab <- overlap_o %>%
   group_by(id_species, species, method) %>%
@@ -565,18 +541,18 @@ tab <- overlap_o %>%
   select(id_species, species, common_name, method, overlap) %>%
   tidyr::pivot_wider(names_from = method, values_from = overlap, values_fill = list(overlap = 0)) %>%
   ungroup() %>%
-  mutate(Total = BLL + SLL + SN + Trawl, Total = ifelse(Total == 0, NA, Total)) %>%
+  mutate(Sum = BLL + SLL + SN + Trawl, Sum = ifelse(Sum == 0, NA, Sum)) %>%
   mutate(BLL = ifelse(BLL == 0, NA, BLL), SLL = ifelse(SLL == 0, NA, SLL), SN = ifelse(SN == 0, NA, SN), Trawl = ifelse(Trawl == 0, NA, Trawl)) %>%
   arrange(as.numeric(id_species)) %>%
   select(-id_species, -species)
 if ('NA' %in% colnames(tab)) tab <- tab %>% select(-'NA')
-tab <- rbind(tab, data.frame("common_name" = "Total", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE)))))
-tab <- rbind(tab, data.frame("common_name" = "Total per year", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE) / n_fishing_years))))
+tab <- rbind(tab, data.frame("common_name" = "Sum", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE)))))
+tab <- rbind(tab, data.frame("common_name" = "Sum per year", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE) / n_fishing_years))))
 tab <- tab %>%
   mutate(BLL = sprintf("%.3f", BLL), SLL = sprintf("%.3f", SLL), SN = sprintf("%.3f", SN), 
-         Trawl = sprintf("%.3f", Trawl), Total = sprintf("%.3f", Total)) %>%
+         Trawl = sprintf("%.3f", Trawl), Sum = sprintf("%.3f", Sum)) %>%
   mutate(BLL = ifelse(BLL == "NA", NA, BLL), SLL = ifelse(SLL == "NA", NA, SLL), 
-         SN = ifelse(SN == "NA", NA, SN), Trawl = ifelse(Trawl == "NA", NA, Trawl), Total = ifelse(Total == "NA", NA, Total))
+         SN = ifelse(SN == "NA", NA, SN), Trawl = ifelse(Trawl == "NA", NA, Trawl), Sum = ifelse(Sum == "NA", NA, Sum))
 
 pandoc.table(tab,
              caption = tab_cap,
@@ -631,7 +607,7 @@ rm(total_overlap)
 \newpage\clearpage
 
 ```{r, results = 'asis' , size = 'scriptsize'}
-tab_cap <- tab_nums(name = "tab:overlap_t", caption = paste("Total overlap by species for bottom-longline (BLL), surface-longline (SLL), set net (SN), and trawl fishing methods between ", min(dat$fishing_year), " and ", max(dat$fishing_year), "."))
+tab_cap <- tab_nums(name = "tab:overlap_t", caption = paste("Total overlap by species for bottom-longline (BLL), surface-longline (SLL), set net (SN), and trawl fishing methods between ", min(dat$fishing_year), " and ", max(dat$fishing_year), ". The summed overlap is only included as a diagnostic for construction of the data."))
 
 tab <- overlap_t %>%
   group_by(id_species, species, method) %>%
@@ -640,18 +616,18 @@ tab <- overlap_t %>%
   select(id_species, species, common_name, method, overlap) %>%
   tidyr::pivot_wider(names_from = method, values_from = overlap, values_fill = list(overlap = 0)) %>%
   ungroup() %>%
-  mutate(Total = BLL + SLL + SN + Trawl, Total = ifelse(Total == 0, NA, Total)) %>%
+  mutate(Sum = BLL + SLL + SN + Trawl, Sum = ifelse(Sum == 0, NA, Sum)) %>%
   mutate(BLL = ifelse(BLL == 0, NA, BLL), SLL = ifelse(SLL == 0, NA, SLL), SN = ifelse(SN == 0, NA, SN), Trawl = ifelse(Trawl == 0, NA, Trawl)) %>%
   arrange(as.numeric(id_species)) %>%
   select(-id_species, -species)
 if ('NA' %in% colnames(tab)) tab <- tab %>% select(-'NA')
-tab <- rbind(tab, data.frame("common_name" = "Total", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE)))))
-tab <- rbind(tab, data.frame("common_name" = "Total per year", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE) / length(unique(dat$fishing_year))))))
+tab <- rbind(tab, data.frame("common_name" = "Sum", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE)))))
+tab <- rbind(tab, data.frame("common_name" = "Sum per year", as.data.frame(t(colSums(tab[,2:6], na.rm = TRUE) / length(unique(dat$fishing_year))))))
 tab <- tab %>%
   mutate(BLL = sprintf("%.3f", BLL), SLL = sprintf("%.3f", SLL), SN = sprintf("%.3f", SN), 
-         Trawl = sprintf("%.3f", Trawl), Total = sprintf("%.3f", Total)) %>%
+         Trawl = sprintf("%.3f", Trawl), Sum = sprintf("%.3f", Sum)) %>%
   mutate(BLL = ifelse(BLL == "NA", NA, BLL), SLL = ifelse(SLL == "NA", NA, SLL), 
-         SN = ifelse(SN == "NA", NA, SN), Trawl = ifelse(Trawl == "NA", NA, Trawl), Total = ifelse(Total == "NA", NA, Total))
+         SN = ifelse(SN == "NA", NA, SN), Trawl = ifelse(Trawl == "NA", NA, Trawl), Sum = ifelse(Sum == "NA", NA, Sum))
 
 pandoc.table(tab,
              caption = tab_cap,

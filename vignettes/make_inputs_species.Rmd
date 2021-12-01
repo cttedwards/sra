@@ -3,7 +3,7 @@
 
 ## `r spp_lab`
 
-`r fig_cap <- fig_nums(name = paste0("fig:overlap_map_", spp), caption = paste0("Sum of density overlap and captures per fishing method for ", spp_lab, "."))`
+`r fig_cap <- fig_nums(name = paste0("fig:overlap_map_", spp), caption = paste0("Sum of observed density overlap and captures per fishing method for ", spp_lab, "."))`
 
 ``` {r, echo = FALSE, fig.cap = fig_cap, fig.height = 6, fig.width = 6}
 gg <- plot_sra_maps(rr)
