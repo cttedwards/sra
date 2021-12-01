@@ -66,9 +66,6 @@ data("cm_longline")
 
 species <- species_groups$code_sra
 names(species) <- species
-
-species_groups$species_group    <- species_groups$capture_type_group
-species_groups$id_species_group <- species_groups$id_capture_type_group
 ```
 
 ```{r, echo = TRUE, message = FALSE}
@@ -132,8 +129,6 @@ The model includes `r n_fishing_years` years of data between `r min(fishing_year
 \captionsetup[table]{labelformat=empty}
 \captionsetup[figure]{labelformat=empty}
 ```
-
-Species groups are currently fixed according to previous seabird risk assessments, and will likely be updated. Cryptic mortality multipliers are not presented here, as they are still being defined.
 
 Observed captures by species, species group, fishing group and method are shown in `r tab_nums("tab:captures1", display = "cite")`, `r tab_nums("tab:captures2", display = "cite")`, `r fig_nums("fig:captures1", display = "cite")`, `r fig_nums("fig:captures2", display = "cite")` and `r fig_nums("fig:captures3", display = "cite")`. The model assumes that captures are proportional to the density overlap (`r fig_nums("fig:overlap_o", display = "cite")`). The overlap provides a model input for fitting and prediction of captures, and is listed in `r tab_nums("tab:overlap_o", display = "cite")` and `r tab_nums("tab:overlap_t", display = "cite")`. When calculating the overlap, effort units are of a thousand hooks for bottom longline (BLL) and surface longline (SLL), km of net for set net (SN), and number of tows for trawl. Species specific maps of the summed density overlap and captures are also provided.
 
@@ -521,8 +516,8 @@ overlap_o <- overlap_1 %>%
 # get species groups
 overlap_o <- overlap_o %>% 
   left_join(species_groups, by = c('species' = 'code_sra')) %>%
-  mutate(month = as.integer(month), id_method = as.integer(id_method), id_fishing_group = as.integer(id_fishing_group), id_capture_type_group = as.integer(id_capture_type_group)) %>%
-  select(species, method, id_method, month, id_fishing_group, id_species, id_species_group, id_capture_type_group, overlap)
+  mutate(month = as.integer(month), id_method = as.integer(id_method), id_fishing_group = as.integer(id_fishing_group), id_species_group = as.integer(id_species_group)) %>%
+  select(species, method, id_method, month, id_fishing_group, id_species, id_species_group, overlap)
 
 # get captures by status (alive / dead)
 cap_alive  <- observer_dat %>% as.data.frame() %>% mutate_captures(field = "captures_status", condition = "alive") %>% aggregate_captures(c("id_method", "id_fishing_group", "month"), species) %>% rename(species = group)
@@ -614,14 +609,14 @@ overlap_t <- overlap_1 %>%
 # get species groups
 overlap_t <- overlap_t %>% 
   left_join(species_groups, by = c('species' = 'code_sra')) %>%
-  mutate(month = as.integer(month), id_method = as.integer(id_method), id_fishing_group = as.integer(id_fishing_group), id_capture_type_group = as.integer(id_capture_type_group)) %>%
-  select(species, method, month, id_method, id_fishing_group, id_species, id_species_group, id_capture_type_group, overlap)
+  mutate(month = as.integer(month), id_method = as.integer(id_method), id_fishing_group = as.integer(id_fishing_group), id_species_group = as.integer(id_species_group)) %>%
+  select(species, method, month, id_method, id_fishing_group, id_species, id_species_group, overlap)
 
 # check
 stopifnot(isTRUE(all.equal(sum(total_overlap, na.rm = TRUE), sum(overlap_t$overlap))))
 
 # if zero commercial overlap but positive observed overlap replace with observed overlap
-overlap_t <- full_join(overlap_t, select(overlap_o, species:overlap, n_captures), by = c("species", "method", "id_method", "month", "id_fishing_group", "id_species", "id_species_group", "id_capture_type_group"))
+overlap_t <- full_join(overlap_t, select(overlap_o, species:overlap, n_captures), by = c("species", "method", "id_method", "month", "id_fishing_group", "id_species", "id_species_group"))
 
 overlap_t <- overlap_t %>% mutate(overlap = case_when(is.na(overlap.x) ~ overlap.y, 
                                                         overlap.x == 0.0 & overlap.y > 0 ~ overlap.y, 
@@ -735,13 +730,13 @@ sra_dat <- list(n_species = length(species),
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
             n_capture_type = 3 + 1,
-            n_capture_type_group = 5,
+            n_capture_type_group = n_species_group,
             n_fishery_group = nrow(fishing_groups), 
             n_fishery_group_m = as.integer(table(fishing_groups$method)),
             
             species_group_s = species_groups$id_species_group,
             
-            capture_type_group_s = species_groups$id_capture_type_group,
+            capture_type_group_s = species_group_s,
             
             idx_method_fg = fishing_groups$id_method,
             
@@ -778,7 +773,7 @@ sra_dat <- list(n_species = length(species),
             fishery_group_i  = overlap_o$id_fishing_group,
             species_i        = overlap_o$id_species,
             species_group_i  = overlap_o$id_species_group,
-            capture_type_group_i = overlap_o$id_capture_type_group,
+            capture_type_group_i = overlap_o$id_species_group,
             overlap_i        = overlap_o$overlap,
             live_captures_i  = overlap_o$n_captures_alive,
             dead_captures_i  = overlap_o$n_captures_dead,
@@ -794,7 +789,7 @@ sra_dat <- list(n_species = length(species),
             fishery_group_j = overlap_t$id_fishing_group,
             species_j       = overlap_t$id_species,
             species_group_j = overlap_t$id_species_group,
-            capture_type_group_j      = overlap_t$id_capture_type_group,
+            capture_type_group_j      = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
             
             n_years = n_fishing_years,
