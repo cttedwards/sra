@@ -706,13 +706,13 @@ sra_dat <- list(n_species = length(species),
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
             n_capture_type = 3 + 1,
-            n_capture_type_group = n_species_group,
+            n_capture_type_group = length(unique(species_groups$species_group)),
             n_fishery_group = nrow(fishing_groups), 
             n_fishery_group_m = as.integer(table(fishing_groups$method)),
             
             species_group_s = species_groups$id_species_group,
             
-            capture_type_group_s = species_group_s,
+            capture_type_group_s = species_groups$id_species_group,
             
             idx_method_fg = fishing_groups$id_method,
             
