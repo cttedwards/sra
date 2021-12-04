@@ -414,14 +414,14 @@ generated quantities {
   // back calculation of vulnerability
   // (probability of capture)
   matrix[n_species, n_fishery_group] vulnerability_sg;
-  matrix[n_species_group, n_fishery_group] vulnerability_zg;
+  matrix[n_species_group, n_fishery_group] vulnerability_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
   // (probability of observation)
   matrix[n_species, n_fishery_group] p_observable_sg;
-  matrix[n_species_group, n_fishery_group] p_observable_zg;
+  matrix[n_species_group, n_fishery_group] p_observable_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
   
   // record overal cryptic capture multipliers
-  matrix[n_species, n_fishery_group] cryptic_multiplier_sg = rep_matrix(0.0, n_species, n_fishery_group);
-  matrix[n_species_group, n_fishery_group] cryptic_multiplier_zg;
+  matrix[n_species, n_fishery_group] cryptic_multiplier_sg;
+  matrix[n_species_group, n_fishery_group] cryptic_multiplier_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
 
   // Captures and deaths
   vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
@@ -481,7 +481,7 @@ generated quantities {
             // Longline
             if (idx_method_fg[g] == 1 || idx_method_fg[g] == 2) {
                 
-                cm = 1.0; //cm_longline_par1[s] > 0.0 ? lognormal_rng(log(cm_longline_par1[s]), cm_longline_par2[s]) : 1.0;
+                cm = cm_longline_par1[s] > 0.0 ? lognormal_rng(log(cm_longline_par1[s]), cm_longline_par2[s]) : 1.0;
                 
                 vulnerability_sg[s,g] = q_sg[s,g] * (p_live_capture_sg + (1 - p_live_capture_sg) * cm);
                 
@@ -515,7 +515,7 @@ generated quantities {
                 cryptic_multiplier_sg[s,g] += (1 - p_live_capture_sg) * p_capture_type_t[capture_type_group_s[s], 1] * cm;
                 
                 // Warp
-                cm = 1.0; //cm_warp_par1[s] > 0.0 ? lognormal_rng(log(cm_warp_par1[s]), cm_warp_par2[s]) : 1.0;
+                cm = cm_warp_par1[s] > 0.0 ? lognormal_rng(log(cm_warp_par1[s]), cm_warp_par2[s]) : 1.0;
                 
                 vulnerability_sg[s,g] += q_sg[s,g] * (1 - p_live_capture_sg) * p_capture_type_t[capture_type_group_s[s], 2] * cm;
                 
@@ -547,9 +547,9 @@ generated quantities {
           for(s in 1:n_species){
               for(g in 1:n_fishery_group){
                   
-                vulnerability_zg[species_group_s[s],g]      = vulnerability_sg[s,g];
-                p_observable_zg[species_group_s[s],g]       = p_observable_sg[s,g];
-                cryptic_multiplier_zg[species_group_s[s],g] = cryptic_multiplier_sg[s,g];
+                vulnerability_zg[species_group_s[s],g]      += vulnerability_sg[s,g];
+                p_observable_zg[species_group_s[s],g]       += p_observable_sg[s,g];
+                cryptic_multiplier_zg[species_group_s[s],g] += cryptic_multiplier_sg[s,g];
                 
                 n[species_group_s[s]] += 1;
               }

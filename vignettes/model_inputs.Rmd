@@ -55,6 +55,8 @@ data("methods")
 data("fishing_groups")
 data("fishing_group_definitions")
 
+data("fishing_years")
+
 data("species")
 data("species_groups")
 
@@ -195,7 +197,7 @@ sra_dat <- list(n_species = length(species),
             capture_type_group_j      = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
             
-            n_years = n_fishing_years,
+            n_years = length(fishing_years),
             
             psi = 0.5)
 ```
@@ -228,8 +230,6 @@ usethis::use_data(methods)
 usethis::use_data(fishing_groups)
 usethis::use_data(sra_ini)
 usethis::use_data(sra_dat)
-usethis::use_data(overlap_o)
-usethis::use_data(overlap_t)
 ```
 
 \newpage
