@@ -112,12 +112,13 @@ Finally, we use the observed fishing intensity $a^{\,\prime}_{j,m}$ and associat
 $$
 \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
 $$
-The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$). The probability of death is $1 - \Psi_{j,z}$, which can be used to predict the number of deaths and observed deaths:
+The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$). The probability of death is $1 - \Psi_{j,z}$, which can be used to predict the number of observed dead captures:
 $$
-\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z})
+\underbrace{\mathrm{observed\,dead\,captures}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} )
 $$
+For the total deaths, we include an $\omega$ term to represent post-capture death of live captures.
 $$
-\underbrace{\mathrm{observed\,deaths}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} )
+\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega)
 $$
 
 # Capture type
@@ -125,8 +126,8 @@ $$
 It is possible to separate the catchability according to the capture type. If we use the notation $C_{t,j,s,m}$ to refer to captures of a specific type $t$ by fishery group $j$, with total captures by that group equal to the sum across types: $C_{j,s,m} = \sum_{t}{C_{t,j,s,m}}$; then we can write the catch equation as:
 ```{=tex}
 \begin{align*}
-C_{j,s,m} &= q_{j,s} \cdot \mathbb{O}_{j,s,m} \\
-C_{1,j,s,m} + C_{2,j,s,m} + \dots &= q_{j,s} \cdot (\pi_1 + \pi_2 + \dots) \cdot \mathbb{O}_{j,s,m} \\
+C_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m} \\
+C_{1,j,s,m} + C_{2,j,s,m} + \dots &= \upsilon_{j,s} \cdot (\pi_1 + \pi_2 + \dots) \cdot \mathbb{O}_{j,s,m} \\
 \end{align*}
 ```
 with $\sum_{t}{\pi_t} = 1$. The probability of observing a capture type $t$ by fishery group $j$ then becomes the product $\pi_t \cdot q_{j,s}$. 
@@ -194,11 +195,6 @@ C_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}
 $$
 with $(\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots) \geq 1$.
 
-Deaths are then equal to:
-$$
-D_{j,s,m} = C_{j,s,m} \cdot (1 - \Psi_{j,z})
-$$
-
 
 ```{=tex}
 \begin{table}
@@ -239,6 +235,7 @@ $P^{\mathrm{\,on\,nest}}_{s,m}$ & Probability of a breeding adult being on the n
 $d(s,m,x)$ & Number of adults per km\textsuperscript{2}   \\
 $a_i$ & Fishing effort intensity  \\
 $\kappa_{j,s}$ & Cryptic mortality multiplier  \\
+$\omega$ & Probability of post-release death \\
 &\\
 \multicolumn{2}{l}{\textbf{Derived covariates}}\\
 $p_{i,s,m}$ & Proprtionate number of individuals available to fishing   \\
