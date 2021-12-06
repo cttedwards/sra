@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   pdf_document:
     toc: false
-    keep_tex: false
+    keep_tex: true
     number_sections: false
     citation_package: natbib
 vignette: >
@@ -13,6 +13,8 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 header-includes: 
+  \usepackage{fvextra}
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
   \usepackage{booktabs}
   \usepackage{lmodern}
   \renewcommand{\familydefault}{\sfdefault}
@@ -38,6 +40,17 @@ rm(filename)
 
 # document package
 roxygen2::roxygenise("..")
+```
+
+```{r, include = FALSE}
+options(encoding = "UTF-8")
+knitr::opts_chunk$set(tidy = 'styler', tidy.opts=list(strict = TRUE))
+
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
 ```
 
 \begin{filecontents}{lib.bib}
@@ -97,14 +110,14 @@ $$
 which is specific to the species $s$ and month $m$.
 
 # Expected captures and deaths
-The capture probability per unit of density overlap is described by the vulnerability $\upsilon_{j,s}$, which is defined at the level of the fishing group $j$ and species $s$. The total captures for fishing group $j$, per species and month is expected to be:
+The rate of interaction per unit of density overlap is described by the vulnerability $\upsilon_{j,s}$, which is defined at the level of the fishing group $j$ and species $s$. The total number of interactions for fishing group $j$, per species and month is expected to be:
 $$
-\underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} = \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}
+\underbrace{\mathrm{interaction}_{j,s,m}}_{I_{j,s,m}} = \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}
 $$
-noting calculation of the density overlap using all known fishing effort per fishery group, $a_{j,m}$. The observable captures per month are calculated using $p^{obs}_{k,z}$, which is the probability of observing a capture given that an observer is present and the capture has occurred (equal to the inverse of the cryptic mortality multiplier $\kappa^{-1}_{k,z}$). The product of $\upsilon_{j,s}$ and $p^{obs}_{k,z}$ gives the catchability $q_{j,s}$. The number of observable captures is therefore expected to be:
+noting calculation of the density overlap using all known fishing effort per fishery group, $a_{j,m}$. The observable interactions are referred to as captures. Per month they are calculated using $p^{obs}_{k,z}$, which is the probability of observing a capture given that an observer is present and the interaction has occurred (equal to the inverse of the cryptic capture multiplier $\kappa^{-1}_{k,z}$). The product of $\upsilon_{j,s}$ and $p^{obs}_{k,z}$ gives the catchability $q_{j,s}$. The number of captures is therefore expected to be:
 ```{=tex}
 \begin{align*}
-\mathrm{observable\,captures}_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot p^{obs}_{k,z} \\
+\mathrm{captures}_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot p^{obs}_{k,z} \\
 & = q_{j,s} \cdot \mathbb{O}_{j,s,m}
 \end{align*}
 ```
@@ -112,31 +125,30 @@ Finally, we use the observed fishing intensity $a^{\,\prime}_{j,m}$ and associat
 $$
 \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
 $$
-The $p^{obs}_{k,z}$ is currently partitioned according to the fishing method and species group, although this is under review. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$). The probability of death is $1 - \Psi_{j,z}$, which can be used to predict the number of observed dead captures:
+The $p^{\,obs}_{k,z}$ is currently partitioned according to the fishing method and species group. The probability of surviving capture is defined using the parameter $\Psi_{j,z}$, which represents the probability of a live capture at the level of the fishing group $j$ and species group $z$ (with $s$ a subset of $z$). The probability of a dead capture is $1 - \Psi_{j,z}$, which can be used to predict the number of observable dead captures:
 $$
-\underbrace{\mathrm{observed\,dead\,captures}_{j,s,m}}_{D^{\,\prime}_{j,s,m}} = \underbrace{\mathrm{observed\,captures}_{j,s,m}}_{C^{\,\prime}_{j,s,m}} \cdot (1 - \Psi_{j,z} )
+\underbrace{\mathrm{dead\,captures}_{j,s,m}}_{C^{\,d}_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z} )
 $$
-For the total deaths, we include an $\omega$ term to represent post-capture death of live captures.
-$$
-\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = \underbrace{\mathrm{captures}_{j,s,m}}_{C_{j,s,m}} \cdot (1 - \Psi_{j,z} \cdot \omega)
-$$
+and similarly for the number of observed dead captures $C^{\,d\,\prime}_{j,s,m}$, distinguished using the prime superscript. The number of live captures and observed live captures are $C^{\,l}_{j,s,m}$ and $C^{\,l\,\prime}_{j,s,m}$ respectively.
 
 # Capture type
 
-It is possible to separate the catchability according to the capture type. If we use the notation $C_{t,j,s,m}$ to refer to captures of a specific type $t$ by fishery group $j$, with total captures by that group equal to the sum across types: $C_{j,s,m} = \sum_{t}{C_{t,j,s,m}}$; then we can write the catch equation as:
+It is possible to separate the catchability according to the capture type. If we use the notation $C_{t,j,s,m}$ to refer to captures of a specific type $t$ by fishery group $j$, with total captures by that group equal to the sum across types: $C_{j,s,m} = \sum_{t}{C_{t,j,s,m}}$; then we can write the number of captures as:
+
 ```{=tex}
 \begin{align*}
-C_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m} \\
-C_{1,j,s,m} + C_{2,j,s,m} + \dots &= \upsilon_{j,s} \cdot (\pi_1 + \pi_2 + \dots) \cdot \mathbb{O}_{j,s,m} \\
+C_{j,s,m} &= q_{j,s} \cdot \mathbb{O}_{j,s,m} \\
+C_{1,j,s,m} + C_{2,j,s,m} + \dots &= q_{j,s} \cdot (\pi_1 + \pi_2 + \dots) \cdot \mathbb{O}_{j,s,m}
 \end{align*}
 ```
-with $\sum_{t}{\pi_t} = 1$. The probability of observing a capture type $t$ by fishery group $j$ then becomes the product $\pi_t \cdot q_{j,s}$. 
+
+with $\sum_{t}{\pi_t} = 1$. 
 
 Being able to represent the capture type within each fishery group is important to account for changing fishing practices. For example, changes in the trawl fishery have changed the proportion of captures that occur on the warp or on the net. It also allows the cryptic mortality multiplier to be properly defined. Captures on the warp in particular are less likely to be observed and should therefore have a higher cryptic mortality. In the longline fisheries, captures during hauling will have a lower cryptic mortality than captures during setting.
 
 # Regression equations
 
-The model is fitted to the observed number of captures and deaths. If $C^{\,\prime}_{j,s,m}$ is the observed number of captures for fishery group $j$, species $s$ and month $m$, then the expectation is:
+The model is fitted to the observed number of captures and deaths. If $C^{\,\prime}_{j,s,m}$ is the observed number of captures for fishery group $j$, which are observed by definition, species $s$ and month $m$, then the expectation is:
 $$
 \lambda_{j,s,m} = q_{j,s} \cdot \mathbb{O}^{\,\prime}_{j,s,m}
 $$
@@ -151,11 +163,11 @@ $$
 
 These likelihoods are identical to what would be calculated from first summing the captures and overlap across species within each species group. 
 
-The probability of death is alos included as a separate likelihood, using the number of observed live captures $L^{\,\prime}_{j,s,m} \leq C^{\,\prime}_{j,s,m}$:
+The probability of dead capture is also included as a separate likelihood, using the number of live captures $C^{\,l\,\prime}_{j,s,m} \leq C^{\,\prime}_{j,s,m}$:
 $$
-L^{\,\prime}_{j,s,m} \sim Binomial(C^{\,\prime}_{j,s,m}, \Psi_{j,z})
+C^{\,l\,\prime}_{j,s,m} \sim Binomial(C^{\,\prime}_{j,s,m}, \Psi_{j,z})
 $$
-The probability of observation $p^{obs}_{k,s}$ does not form part of the likelihood, because there are no data provided to the model that would allow it to be estimated. Instead $p^{obs}_{k,s}$ is included as a distribution, which allow the total number of deaths to be predicted with appropriate uncertainty.
+The probability of observation $p^{\,obs}_{k,s}$ does not form part of the likelihood, because there are no data provided to the model that would allow it to be estimated. Instead $p^{\,obs}_{k,s}$ is included as a distribution, which allow the total number of deaths to be predicted with appropriate uncertainty.
 
 The catchability is a function of method ($k$), fishery group ($j$) and species group ($z$) covariates:
 $$
@@ -170,31 +182,35 @@ Coefficients $\gamma_j$ and $\gamma_z$ are constrained to sum to zero.
 ## Estimation
 All estimation was performed within a Bayesian framework using rstan [@stan2021].
 
-## Prediction of total captures and deaths
+## Prediction of total interactions and deaths
 
-During the estimation process we estimate the catchability $q_{j,s}$, but to estimate the total captures (both observed and unobserved) we need to calculate the vulnerability $\upsilon_{j,s}$. To do this we include a cryptic mortality multiplier $\kappa_{j,s}$ (equal to $1 / p^{obs}_{k,z}$) that is specific to the fishery group $j$ and the species $s$.
+During the estimation process we estimate the catchability $q_{j,s}$, but to estimate the total interactions and captures we need to calculate the vulnerability $\upsilon_{j,s}$. To do this we include a cryptic capture multiplier $\kappa_{j,s}$ (equal to $1 / p^{obs}_{k,z}$) that is specific to the fishery group $j$ and the species $s$.
 
-We modify the capture equation:
+We modify the interaction equation:
 ```{=tex}
 \begin{align*}
-C_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}\\
+I_{j,s,m} &= \upsilon_{j,s} \cdot \mathbb{O}_{j,s,m}\\
 &= q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot \kappa_{j,s}
 \end{align*}
 ```
-by first assuming that only dead captures are cryptic:
+by first assuming that the probability of live capture is equal to the probability of a live interaction. Further, we currently assume that only dead interactions are cryptic:
 $$
-C_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})
+I_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})
 $$
 The probability of observation is therefore:
 $$
 p^{obs}_{k,z} = (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})^{-1}
 $$
-which imposes a lower bound on the cryptic mortality of $\kappa_{j,s} \geq 1$ (so that $0 \leq p^{obs}_{k,z} \leq 1$). The model also allows for multipliers to be capture type specific. If we estimate $\pi_t$ per capture type then:
+which imposes a lower bound on the cryptic capture rate of $\kappa_{j,s} \geq 1$ (so that $0 \leq p^{obs}_{k,z} \leq 1$). The model also allows for multipliers to be capture type specific. If we estimate $\pi_{t,z}$ per capture type then, and again assume that this is applicable to interactions, then:
 $$
-C_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot (\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots))
+I_{j,s,m} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} + (1 - \Psi_{j,z}) \cdot (\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots))
 $$
 with $(\pi_1 \cdot \kappa_{1,j,s} + \pi_2 \cdot \kappa_{2,j,s} + \dots) \geq 1$.
 
+The total deaths is a summation of the interactions that lead to death, including deaths that occur at capture and after capture and live release. We include an $\omega$ term to represent post-capture death of live captures.
+$$
+\underbrace{\mathrm{deaths}_{j,s,m}}_{D_{j,s,m}} = q_{j,s} \cdot \mathbb{O}_{j,s,m} \cdot (\Psi_{j,z} \cdot \omega + (1 - \Psi_{j,z}) \cdot \kappa_{j,s})
+$$
 
 ```{=tex}
 \begin{table}
@@ -218,9 +234,9 @@ $x$ & Raster grid\\
 \multicolumn{2}{l}{\textbf{Estimated parameters}} \\
 $N^{\mathrm{\,BP}}_s$ & Number of breeding pairs  \\
 $P^{\mathrm{\,B}}_s$ & Annual probability of breeding  \\
-$\mu_k$, $\beta_j$, $\beta_z$, $\varepsilon_{sj}$ & Catchability coefficients  \\
+$\mu_k$, $\beta_j$, $\beta_z$, $\varepsilon_{zj}$ & Catchability coefficients  \\
 $\gamma_j$, $\gamma_z$& Survivorship coefficients \\
-$\pi_t$ & Probability of capture type \\
+$\pi_{tz}$ & Probability of capture type \\
 & \\
 \multicolumn{2}{l}{\textbf{Derived parameters}} \\
 $N^{\mathrm{\,adults}}_s$ & Total number of adults   \\
@@ -228,6 +244,7 @@ $\mathbb{N}_{s,m}$ & Number of adults available to fishing   \\
 $q_{j,s}$ & Catchabilty  \\
 $\upsilon_{j,s}$ & Vulnerability \\
 $\Psi_{j,z}$ & Probability alive given capture \\
+$I_{i,s,m}$ & Number of interactions \\
 & \\
 \multicolumn{2}{l}{\textbf{Input covariates}}\\
 $P^{\mathrm{\,in\,eez}}_{s,m}$ & Probability of an adult being in the EEZ  \\
@@ -243,7 +260,8 @@ $\mathbb{O}_{i,s,m}$ & Density overlap  \\
 & \\
 \multicolumn{2}{l}{\textbf{Observational data}}\\
 $C^{\,\prime}_{i,s,m}$ & Number of captures \\
-$L^{\,\prime}_{i,s,m}$ & Number of live captures \\
+$C^{\,l\,\prime}_{i,s,m}$ & Number of live captures \\
+$C^{\,d\,\prime}_{i,s,m}$ & Number of dead captures \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -251,4 +269,14 @@ $L^{\,\prime}_{i,s,m}$ & Number of live captures \\
 
 
 \clearpage
+
+# Model code
+
+```{r, echo = FALSE, size = 'scriptsize', results = 'markup', comment=NA, highlight=TRUE, class.output = "C"}
+model <- sra::sra()
+model_code <- slot(model, "model_code")
+code_in <- strsplit(model_code, split = "\n")[[1]]
+cat(code_in, sep = "\n")
+```
+
 

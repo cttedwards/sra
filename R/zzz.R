@@ -1,4 +1,4 @@
 .onAttach <- function(libname, pkgname)
 {
-    packageStartupMessage("sra version 0.0.2 (2021-12-02)")
+    packageStartupMessage("sra version 0.0.3 (2021-12-06)")
 }

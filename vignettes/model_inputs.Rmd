@@ -4,7 +4,7 @@ author: "Charles Edwards, Tom Peatman, Dave Goad, Darcy Webber"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   pdf_document:
-    toc: true
+    toc: false
     keep_tex: true
     number_sections: true
     citation_package: natbib
@@ -71,18 +71,19 @@ data("cm_longline")
 ```{r, echo = TRUE, message = FALSE}
 library(sraInputsBio)
 
-data("inputsBio_v1.0.0")
+data_file <- paste0("inputsBio_v", packageVersion("sraInputsBio"))
+do.call(data, list(data_file, package = "sraInputsBio"))
 ```
 
 ```{r}
 # check that package data and version match
-stopifnot(isTRUE(all.equal(attributes(inputsBio_v1.0.0)$version, packageVersion("sraInputsBio"))))
+stopifnot(isTRUE(all.equal(attributes(inputsBio_v2.0.0)$version, packageVersion("sraInputsBio"))))
 ```
 
 ```{r}
 # get data
-inputsBio <- get("inputsBio_v1.0.0")
-rm(inputsBio_v1.0.0)
+inputsBio <- do.call(get, list(data_file))
+rm(data_file)
 ```
 
 ```{r}

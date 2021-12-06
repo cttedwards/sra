@@ -418,6 +418,8 @@ generated quantities {
   // (probability of observation)
   matrix[n_species, n_fishery_group] p_observable_sg;
   matrix[n_species_group, n_fishery_group] p_observable_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
+  // (catchability)
+  matrix[n_species_group, n_fishery_group] q_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
   
   // record overal cryptic capture multipliers
   matrix[n_species, n_fishery_group] cryptic_multiplier_sg;
@@ -547,6 +549,7 @@ generated quantities {
           for(s in 1:n_species){
               for(g in 1:n_fishery_group){
                   
+                q_zg[species_group_s[s],g]                  += q_sg[s,g];
                 vulnerability_zg[species_group_s[s],g]      += vulnerability_sg[s,g];
                 p_observable_zg[species_group_s[s],g]       += p_observable_sg[s,g];
                 cryptic_multiplier_zg[species_group_s[s],g] += cryptic_multiplier_sg[s,g];
@@ -558,6 +561,7 @@ generated quantities {
           for(z in 1:n_species_group){
               for(g in 1:n_fishery_group){
                   
+                q_zg[z,g]                  /= n[z];
                 vulnerability_zg[z,g]      /= n[z];
                 p_observable_zg[z,g]       /= n[z];
                 cryptic_multiplier_zg[z,g] /= n[z];
