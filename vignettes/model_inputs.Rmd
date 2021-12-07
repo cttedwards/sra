@@ -109,12 +109,13 @@ p_nest <- p_nest %>% subset(rownames(.) %in% species)
 
 ```{r}
 # Check that there are always some birds in zone when there are non-zero captures
-tab <- tapply(overlap_o$n_captures, list(overlap_o$species, overlap_o$month), sum, na.rm = TRUE)
-tab <- tab[match(species_groups$code_sra, rownames(tab)),]
-rownames(tab) <- species_groups$code_sra
-colnames(tab) <- colnames(p_eez)
+tab1 <- tapply(overlap_o$n_captures, list(overlap_o$species, overlap_o$month), sum, na.rm = TRUE)
+tab1 <- tab1[match(species_groups$code_sra, rownames(tab1)),]
 
-tab <- full_join(reshape2::melt(tab, varnames = c("species", "month")), reshape2::melt(p_eez, varnames = c("species", "month")), by = c("species", "month"))
+tab2 <- tapply(overlap_o$overlap, list(overlap_o$species, overlap_o$month), sum, na.rm = TRUE)
+tab2 <- tab2[match(species_groups$code_sra, rownames(tab2)),]
+
+tab <- full_join(reshape2::melt(tab1, varnames = c("species", "month")), reshape2::melt(tab2, varnames = c("species", "month")), by = c("species", "month"))
 stopifnot(nrow(tab) == length(species) * 12)
 tab <- tab %>% filter(!is.na(value.x))
 
