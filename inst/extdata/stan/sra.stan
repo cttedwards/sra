@@ -415,15 +415,21 @@ generated quantities {
   // (probability of capture)
   matrix[n_species, n_fishery_group] vulnerability_sg;
   matrix[n_species_group, n_fishery_group] vulnerability_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
+  matrix[n_species_group, n_method]        vulnerability_zm = rep_matrix(0.0, n_species_group, n_method);
   // (probability of observation)
   matrix[n_species, n_fishery_group] p_observable_sg;
   matrix[n_species_group, n_fishery_group] p_observable_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
+  matrix[n_species_group, n_method]        p_observable_zm = rep_matrix(0.0, n_species_group, n_method);
   // (catchability)
   matrix[n_species_group, n_fishery_group] q_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
+  matrix[n_species_group, n_method]        q_zm = rep_matrix(0.0, n_species_group, n_method);
+  // (catchability for trawl)
+  matrix[n_species_group, n_fishery_group] q_zgt[n_capture_type] = rep_array(rep_matrix(0.0, n_species_group, n_fishery_group), n_capture_type);
   
   // record overal cryptic capture multipliers
   matrix[n_species, n_fishery_group] cryptic_multiplier_sg;
   matrix[n_species_group, n_fishery_group] cryptic_multiplier_zg = rep_matrix(0.0, n_species_group, n_fishery_group);
+  matrix[n_species_group, n_method]        cryptic_multiplier_zm = rep_matrix(0.0, n_species_group, n_method);
 
   // Captures and deaths
   vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
@@ -554,8 +560,15 @@ generated quantities {
                 p_observable_zg[species_group_s[s],g]       += p_observable_sg[s,g];
                 cryptic_multiplier_zg[species_group_s[s],g] += cryptic_multiplier_sg[s,g];
                 
-                n[species_group_s[s]] += 1;
+                if (idx_method_fg[g] == 4) {
+                    for (t in 1:n_capture_type) {
+                        q_zgt[species_group_s[s],g,t] += q_sg[s,g] * p_capture_type_t[capture_type_group_s[s], t];
+                    }
+                }
               }
+              
+              // number of species per group
+              n[species_group_s[s]] += 1;
           }
           
           for(z in 1:n_species_group){
@@ -565,6 +578,39 @@ generated quantities {
                 vulnerability_zg[z,g]      /= n[z];
                 p_observable_zg[z,g]       /= n[z];
                 cryptic_multiplier_zg[z,g] /= n[z];
+                
+                if (idx_method_fg[g] == 4) {
+                    for (t in 1:n_capture_type) {
+                        q_zgt[z,g,t] /= n[z];
+                    }
+                }
+              }
+          }
+      }
+      
+      // Assign mean to species group and method
+      {
+          int n[n_species_group, n_method] = rep_array(0, n_species_group, n_method);
+          
+          for(s in 1:n_species){
+              for(g in 1:n_fishery_group){
+                  
+                q_zm[species_group_s[s],idx_method_fg[g]]                  += q_sg[s,g];
+                vulnerability_zm[species_group_s[s],idx_method_fg[g]]      += vulnerability_sg[s,g];
+                p_observable_zm[species_group_s[s],idx_method_fg[g]]       += p_observable_sg[s,g];
+                cryptic_multiplier_zm[species_group_s[s],idx_method_fg[g]] += cryptic_multiplier_sg[s,g];
+                
+                n[species_group_s[s],idx_method_fg[g]] += 1;
+              }
+          }
+          
+          for(z in 1:n_species_group){
+              for(m in 1:n_method){
+                  
+                q_zm[z,m]                  /= n[z,m];
+                vulnerability_zm[z,m]      /= n[z,m];
+                p_observable_zm[z,m]       /= n[z,m];
+                cryptic_multiplier_zm[z,m] /= n[z,m];
               }
           }
       }
