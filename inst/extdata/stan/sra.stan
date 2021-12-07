@@ -562,7 +562,7 @@ generated quantities {
                 
                 if (idx_method_fg[g] == 4) {
                     for (t in 1:n_capture_type) {
-                        q_zgt[species_group_s[s],g,t] += q_sg[s,g] * p_capture_type_t[capture_type_group_s[s], t];
+                        q_zgt[t,species_group_s[s],g] += q_sg[s,g] * p_capture_type_t[capture_type_group_s[s], t];
                     }
                 }
               }
@@ -581,7 +581,7 @@ generated quantities {
                 
                 if (idx_method_fg[g] == 4) {
                     for (t in 1:n_capture_type) {
-                        q_zgt[z,g,t] /= n[z];
+                        q_zgt[t,z,g] /= n[z];
                     }
                 }
               }
