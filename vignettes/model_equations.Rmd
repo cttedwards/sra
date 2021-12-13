@@ -171,9 +171,9 @@ The probability of observation $p^{\,obs}_{k,s}$ does not form part of the likel
 
 The catchability is a function of method ($k$), fishery group ($j$) and species group ($z$) covariates:
 $$
-\mathrm{log}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{z,j}
+\mathrm{log}(q_{j,s}) = \mu_k + \beta_j + \beta_z + \varepsilon_{s,j}
 $$
-where $\varepsilon_{z,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
+where $\varepsilon_{s,j}$ is a species and fishery group specific random effect centred on zero. Coefficients $\beta_j$ and $\beta_z$ are constrained to sum to zero. The probability of live captures is:
 $$
 \mathrm{logit}(\Psi_{j,z}) = \gamma_j + \gamma_z
 $$
@@ -234,7 +234,7 @@ $x$ & Raster grid\\
 \multicolumn{2}{l}{\textbf{Estimated parameters}} \\
 $N^{\mathrm{\,BP}}_s$ & Number of breeding pairs  \\
 $P^{\mathrm{\,B}}_s$ & Annual probability of breeding  \\
-$\mu_k$, $\beta_j$, $\beta_z$, $\varepsilon_{zj}$ & Catchability coefficients  \\
+$\mu_k$, $\beta_j$, $\beta_z$, $\varepsilon_{sj}$ & Catchability coefficients  \\
 $\gamma_j$, $\gamma_z$& Survivorship coefficients \\
 $\pi_{tz}$ & Probability of capture type \\
 & \\

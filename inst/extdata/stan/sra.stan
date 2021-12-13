@@ -467,8 +467,10 @@ generated quantities {
   
   real p_survive = uniform_rng(0, 1);
   
-  vector[n_method] captures_sm[n_species]       = rep_array(rep_vector(0.0, n_method), n_species);
-  vector[n_method] dead_captures_sm[n_species]  = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_method] captures_sm[n_species]                   = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] captures_zg[n_species_group]      = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
+  vector[n_method] dead_captures_sm[n_species]              = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] dead_captures_zg[n_species_group] = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
   
   vector[n_method] interactions_sm[n_species]   = rep_array(rep_vector(0.0, n_method), n_species);
   vector[n_method] deaths_sm[n_species]         = rep_array(rep_vector(0.0, n_method), n_species);
@@ -783,14 +785,16 @@ generated quantities {
             dead_captures_j = binomial_rng(captures_j, 1.0 - p_live_captures_j);
             
             // sum captures
-            captures_sm[species_j[j], method_j[j]] += captures_j;
+            captures_sm[species_j[j], method_j[j]]                         += captures_j;
+            captures_zg[species_group_s[species_j[j]], fishery_group_j[j]] += captures_j;
             
             captures_s[species_j[j]]       += captures_j;
             captures_g[fishery_group_j[j]] += captures_j;
             captures_m[method_j[j]]        += captures_j;
             
             // sum dead captures
-            dead_captures_sm[species_j[j], method_j[j]] += dead_captures_j;
+            dead_captures_sm[species_j[j], method_j[j]]                         += dead_captures_j;
+            dead_captures_zg[species_group_s[species_j[j]], fishery_group_j[j]] += dead_captures_j;
             
             dead_captures_s[species_j[j]]       += dead_captures_j;
             dead_captures_g[fishery_group_j[j]] += dead_captures_j;
