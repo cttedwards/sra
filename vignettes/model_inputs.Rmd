@@ -31,6 +31,7 @@ library(knitr)
 library(pander)
 library(dplyr)
 library(ggplot2)
+library(usethis)
 ```
 
 ```{r, include = FALSE}
@@ -44,6 +45,11 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 })
 
 knitr::opts_knit$set(output.dir = ".")
+```
+
+```{r, echo = FALSE}
+# Get Version and date
+VERSION <- package_version(scan('../DESCRIPTION',what = character(),skip = 3,nlines = 1)[2])
 ```
 
 \vfill
@@ -76,14 +82,14 @@ do.call(data, list(data_file, package = "sraInputsBio"))
 ```
 
 ```{r}
-# check that package data and version match
-stopifnot(isTRUE(all.equal(attributes(inputsBio_v2.0.0)$version, packageVersion("sraInputsBio"))))
-```
-
-```{r}
 # get data
 inputsBio <- do.call(get, list(data_file))
 rm(data_file)
+```
+
+```{r}
+# check that package data and version match
+stopifnot(isTRUE(all.equal(attributes(inputsBio)$version, packageVersion("sraInputsBio"))))
 ```
 
 ```{r}
@@ -205,6 +211,10 @@ sra_dat <- list(n_species = length(species),
 ```
 
 ```{r}
+attributes(sra_dat)$version <- VERSION
+```
+
+```{r}
 # check all probability distributions are represented in the model code
 stopifnot(isTRUE(all(sra_dat$n_breeding_pairs_type %in% 0:2)))
 stopifnot(isTRUE(all(sra_dat$adult_survival_current_type %in% 0:1)))
@@ -227,13 +237,51 @@ sra_ini <- list(log_q_intercept = rep(-10, sra_dat$n_method),
 ```
 
 ```{r}
-# save
-usethis::use_data(methods)
-usethis::use_data(fishing_groups)
-usethis::use_data(sra_ini)
-usethis::use_data(sra_dat)
+attributes(sra_ini)$version <- VERSION
 ```
 
-\newpage
+```{r}
+# save
+usethis::use_data(methods, overwrite = TRUE)
+usethis::use_data(fishing_groups, overwrite = TRUE)
+usethis::use_data(sra_dat, overwrite = TRUE)
+```
+
+```{r, results = 'hide'}
+# Building model ----
+
+model <- sra::sra()
+
+# Get initial values ----
+
+tmp <- rstan::optimizing(object = model, data = sra_dat, init = sra_ini, verbose = TRUE, as_vector = FALSE)
+
+sra_ini$log_q_intercept         <- tmp$par$log_q_intercept
+sra_ini$log_q_method_raw        <- tmp$par$log_q_method_raw
+sra_ini$log_q_species_raw       <- tmp$par$log_q_species_raw
+sra_ini$eps_gs                  <- tmp$par$eps_gs
+sra_ini$beta_live_capture_g     <- tmp$par$beta_live_capture_g
+sra_ini$beta_live_capture_z     <- tmp$par$beta_live_capture_z
+sra_ini$n_breeding_pairs_raw_0  <- structure(tmp$par$n_breeding_pairs_raw_0, dim = sra_dat$n_breeding_pairs_type_0)
+sra_ini$n_breeding_pairs_raw_1  <- structure(tmp$par$n_breeding_pairs_raw_1, dim = sra_dat$n_breeding_pairs_type_1)
+sra_ini$n_breeding_pairs_raw_2  <- structure(tmp$par$n_breeding_pairs_raw_2, dim = sra_dat$n_breeding_pairs_type_2)
+sra_ini$p_breeding_raw_s        <- tmp$par$p_breeding_raw_s
+
+usethis::use_data(sra_ini, overwrite = TRUE)
+
+# Run MCMC
+
+#sra_fit <- rstan::sampling(object = model, data = sra_dat, chains = 2, iter = 300, warmup = 100, thin = 1, init = function() sra_ini, verbose = TRUE)
+#usethis::use_data(sra_fit, overwrite = TRUE)
+```
+
+```{r mcmc_2, fig.cap = "MCMC trace", fig.height = 5}
+#x <- rstan::extract(sra_fit, pars = paste0("traces[", 5:7, "]"), permute = FALSE)
+#
+#dimnames(x) <- list(iteration = 1:dim(x)[1], chain = paste0("chain_", 1:dim(x)[2]), parameter = c("Prob. live capture", "N breeding pairs", "Prob. breeding"))
+#x <- reshape2::melt(x)
+#
+#ggplot(x) + geom_line(aes(iteration, value, col = chain)) + facet_grid(parameter~., scales = "free_y") + theme_bw(base_size = 14) + theme(axis.text.y = element_blank(), axis.title.y = element_blank()) #+ guides(col = "none") + xlab("Iteration")
+```
 
 

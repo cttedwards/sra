@@ -2,7 +2,7 @@ Package: sra
 Type: Package
 Title: Seabird Risk Assessment
 Version: 0.0.3
-Date: 2021-09-14
+Date: 2022-04-04
 Author: Charles T T Edwards <cescapecs@gmail.com>
 Maintainer: Charles T T Edwards <cescapecs@gmail.com>
 Description: Seabird Risk Assessment
@@ -11,13 +11,15 @@ LazyData: true
 VignetteBuilder: knitr
 Depends:
     R (>= 4.0.2),
-    rstan (>= 2.21.0),
-    sraUtils (>= 1.0.0)
+    rstan (>= 2.21.0)
 Suggests:
     markdown,
     rmarkdown (>= 2.6),
     knitr (>= 1.31),
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    sraUtils (>= 1.0.0),
+    sraInputs (>= 0.2.0),
+    sraInputsBio (>= 0.1.0)
 Collate: 
     'sra.R'
     'zzz.R'
