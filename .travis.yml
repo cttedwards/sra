@@ -28,7 +28,7 @@ apt_packages:
   - libv8-dev
   
 script:
-    - R CMD build --no-build-vignettes .
+    - R CMD build .
     - R CMD check .
 
 repos:
