@@ -48,7 +48,7 @@ knitr::opts_knit$set(output.dir = ".")
 ```
 
 ```{r, echo = FALSE}
-# Get Version and date
+# Get Version
 VERSION <- package_version(scan('../DESCRIPTION',what = character(),skip = 3,nlines = 1)[2])
 ```
 
@@ -69,9 +69,9 @@ data("species_groups")
 data("overlap_o")
 data("overlap_t")
 
-data("cm_net")
-data("cm_warp")
-data("cm_longline")
+data("cc_net")
+data("cc_warp")
+data("cc_longline")
 ```
 
 ```{r, echo = TRUE, message = FALSE}
@@ -97,14 +97,19 @@ stopifnot(isTRUE(all.equal(attributes(inputsBio)$version, packageVersion("sraInp
 N_BP   <- inputsBio[["N_BP"]]
 S_curr <- inputsBio[["S_curr"]]
 S_opt  <- inputsBio[["S_opt"]]
+S_egg  <- inputsBio[["S_egg_mult"]]
+S_juv  <- inputsBio[["S_juv_mult"]]
 A_curr <- inputsBio[["A_curr"]]
 P_B    <- inputsBio[["P_B"]]
 p_nest <- inputsBio[["p_nest"]]
 p_eez  <- inputsBio[["p_EEZ"]]
+clutch <- inputsBio[["clutch_size"]][,"clutch_size"]
 
 N_BP   <- N_BP   %>% filter(code_sra %in% species)
 S_curr <- S_curr %>% filter(code_sra %in% species)
 S_opt  <- S_opt  %>% filter(code_sra %in% species)
+S_egg  <- S_egg  %>% filter(code_sra %in% species)
+S_juv  <- S_juv  %>% filter(code_sra %in% species)
 A_curr <- A_curr %>% filter(code_sra %in% species)
 P_B    <- P_B    %>% filter(code_sra %in% species)
 
@@ -142,23 +147,19 @@ sra_dat <- list(n_species = length(species),
             n_month = 12,
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
-            n_capture_type = 3 + 1,
-            n_capture_type_group = length(unique(species_groups$species_group)),
             n_fishery_group = nrow(fishing_groups), 
             n_fishery_group_m = as.integer(table(fishing_groups$method)),
             
             species_group_s = species_groups$id_species_group,
             
-            capture_type_group_s = species_groups$id_species_group,
-            
             idx_method_fg = fishing_groups$id_method,
             
-            cm_longline_par1 = cm_longline$par1,
-            cm_longline_par2 = cm_longline$par2,
-            cm_warp_par1 = cm_warp$par1,
-            cm_warp_par2 = cm_warp$par2,
-            cm_net_par1 = cm_net$par1,
-            cm_net_par2 = cm_net$par2,
+            cc_longline_par1 = cc_longline$par1,
+            cc_longline_par2 = cc_longline$par2,
+            cc_warp_par1 = cc_warp$par1,
+            cc_warp_par2 = cc_warp$par2,
+            cc_net_par1 = cc_net$par1,
+            cc_net_par2 = cc_net$par2,
 
             n_breeding_pairs_type = ifelse(N_BP$distribution == 'uniform', 0, ifelse(N_BP$distribution == 'log-normal', 1, 2)),
             n_breeding_pairs_p1 = N_BP$par1,
@@ -174,8 +175,16 @@ sra_dat <- list(n_species = length(species),
             adult_survival_current_p1 = S_curr$par1,
             adult_survival_current_p2 = S_curr$par2,
             adult_survival_opt_type = ifelse(S_opt$distribution == 'uniform', 0, 1),
+            adult_survival_opt_type_0 = sum(S_opt$distribution == 'uniform'),
+            adult_survival_opt_type_1 = sum(S_opt$distribution == 'logit-normal'),
             adult_survival_opt_p1 = S_opt$par1,
             adult_survival_opt_p2 = S_opt$par2,
+            egg_survival_mult_p1 = S_egg$par1,
+            egg_survival_mult_p2 = S_egg$par2,
+            juv_survival_mult_p1 = S_juv$par1,
+            juv_survival_mult_p2 = S_juv$par2,
+            
+            clutch_size_s = clutch,
             
             p_eez  = p_eez,
             p_nest = p_nest,
@@ -186,14 +195,13 @@ sra_dat <- list(n_species = length(species),
             fishery_group_i  = overlap_o$id_fishing_group,
             species_i        = overlap_o$id_species,
             species_group_i  = overlap_o$id_species_group,
-            capture_type_group_i = overlap_o$id_species_group,
             overlap_i        = overlap_o$overlap,
             live_captures_i  = overlap_o$n_captures_alive,
             dead_captures_i  = overlap_o$n_captures_dead,
             net_captures_i   = overlap_o$n_captures_net,
             warp_captures_i  = overlap_o$n_captures_warp,
-            other_captures_i = overlap_o$n_captures_other,
             captures_i       = overlap_o$n_captures,
+            use_net_captures_i = overlap_o$use_captures_net,
             #captures_method_i = overlap_o$n_captures_net + overlap_o$n_captures_warp + overlap_o$n_captures_other;
                          
             n_j             = nrow(overlap_t),
@@ -202,12 +210,11 @@ sra_dat <- list(n_species = length(species),
             fishery_group_j = overlap_t$id_fishing_group,
             species_j       = overlap_t$id_species,
             species_group_j = overlap_t$id_species_group,
-            capture_type_group_j      = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
             
             n_years = length(fishing_years),
             
-            psi = 0.5)
+            psi = 1.0)
 ```
 
 ```{r}
@@ -233,7 +240,13 @@ sra_ini <- list(log_q_intercept = rep(-10, sra_dat$n_method),
                 n_breeding_pairs_raw_0 = structure(rep(0.5, sra_dat$n_breeding_pairs_type_0), dim = sra_dat$n_breeding_pairs_type_0),
                 n_breeding_pairs_raw_1 = structure(with(subset(N_BP, distribution == 'log-normal'), par1), dim = sra_dat$n_breeding_pairs_type_1),
                 n_breeding_pairs_raw_2 = structure(with(subset(N_BP, distribution == 'normal'), par1), dim = sra_dat$n_breeding_pairs_type_2),
-                p_breeding_raw_s = rep(2.0, sra_dat$n_species))
+                p_breeding_raw_s = rep(2.0, sra_dat$n_species),
+                adult_survival_opt_raw_0 = rep(0.5, sra_dat$adult_survival_opt_type_0),
+                adult_survival_opt_raw_1 = logit(sra_dat$adult_survival_opt_p1[sra_dat$adult_survival_opt_type == 1]),
+                egg_survival_mult_raw_s = rep(0.7, sra_dat$n_species),
+                juv_survival_mult_raw_s = rep(0.7, sra_dat$n_species),
+                age_breeding_current_raw_s = rep(0.5, sra_dat$n_species),
+                p_net_capture_z = rep(0.5, sra_dat$n_species_group))
 ```
 
 ```{r}
@@ -250,11 +263,13 @@ usethis::use_data(sra_dat, overwrite = TRUE)
 ```{r, results = 'hide'}
 # Building model ----
 
-model <- sra::sra()
+sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.2.stan")
+
+#model <- sra::sra()
 
 # Get initial values ----
 
-tmp <- rstan::optimizing(object = model, data = sra_dat, init = sra_ini, verbose = TRUE, as_vector = FALSE)
+tmp <- rstan::optimizing(object = sra_mdl, data = sra_dat, init = sra_ini, verbose = TRUE, as_vector = FALSE)
 
 sra_ini$log_q_intercept         <- tmp$par$log_q_intercept
 sra_ini$log_q_method_raw        <- tmp$par$log_q_method_raw
@@ -266,22 +281,58 @@ sra_ini$n_breeding_pairs_raw_0  <- structure(tmp$par$n_breeding_pairs_raw_0, dim
 sra_ini$n_breeding_pairs_raw_1  <- structure(tmp$par$n_breeding_pairs_raw_1, dim = sra_dat$n_breeding_pairs_type_1)
 sra_ini$n_breeding_pairs_raw_2  <- structure(tmp$par$n_breeding_pairs_raw_2, dim = sra_dat$n_breeding_pairs_type_2)
 sra_ini$p_breeding_raw_s        <- tmp$par$p_breeding_raw_s
+sra_ini$adult_survival_opt_raw_0  <- structure(tmp$par$adult_survival_opt_raw_0, dim = sra_dat$adult_survival_opt_type_0)
+sra_ini$adult_survival_opt_raw_1  <- structure(tmp$par$adult_survival_opt_raw_1, dim = sra_dat$adult_survival_opt_type_1)
+sra_ini$egg_survival_mult_raw_s <- tmp$par$egg_survival_mult_raw_s
+sra_ini$juv_survival_mult_raw_s <- tmp$par$juv_survival_mult_raw_s
+sra_ini$p_net_capture_z         <- tmp$par$p_net_capture_z
 
 usethis::use_data(sra_ini, overwrite = TRUE)
 
-# Run MCMC
+# Fit initial values ----
 
-#sra_fit <- rstan::sampling(object = model, data = sra_dat, chains = 2, iter = 300, warmup = 100, thin = 1, init = function() sra_ini, verbose = TRUE)
-#usethis::use_data(sra_fit, overwrite = TRUE)
+# Observed vs expected captures
+cdat1 <- data.frame(obs = sra_dat$live_captures_i, var_id = 1:sra_dat$n_i, species = sra_dat$species_i)
+cdat2 <- data.frame(obs = sra_dat$dead_captures_i, var_id = 1:sra_dat$n_i, species = sra_dat$species_i)
+
+clive1 <- tmp$par$mu_live_captures_i %>%
+  reshape2::melt(varnames = "var_id") %>%
+  mutate(grp = "Alive")
+cdead1 <- tmp$par$mu_dead_captures_i %>%
+  reshape2::melt(varnames = "var_id") %>%
+  mutate(grp = "Dead")
+
+clive2 <- clive1 %>%
+  left_join(cdat1, by = "var_id") %>%
+  group_by(species, grp) %>%
+  summarise(obs = sum(obs), 
+            hat = sum(value))
+
+cdead2 <- cdead1 %>%
+  left_join(cdat2, by = "var_id") %>%
+  group_by(species, grp) %>%
+  summarise(obs = sum(obs), 
+            hat = sum(value))
+
+df1 <- rbind(clive2, cdead2) %>%
+  ungroup()
+
+stopifnot(sum(df1$obs) == sum(cdat1$obs) + sum(cdat2$obs))
+
+gg <- ggplot(data = df1, aes(x = obs, y = hat)) +
+  geom_point(size = 3) +
+  geom_abline(slope = 1) +
+  facet_wrap(grp ~ ., ncol = 1) +
+  theme_bw() +
+  labs(x = "Observed number of captures", y = "Predicted number of captures", colour = NULL) +
+  theme(aspect.ratio = 1)
+ggsave(gg, filename = "sra_ini_fit.png")
+
+rm(gg, df1, cdead2, cdead1, clive2, clive1, cdat1, cdat2)
+
+# Print initial deaths and captures
+emp <- data.frame(id = sra_dat$species_i, captures = sra_dat$captures_i, dead_captures = sra_dat$dead_captures_i) %>% group_by(id) %>% summarise(observed_captures = sum(captures), observed_dead_captures = sum(dead_captures))
+tab <- data.frame(id = 1:71, species = species_groups$common_name, captures = round(tmp$par$observed_captures_s), dead_captures = round(tmp$par$observed_dead_captures_s), risk = round(tmp$par$risk_ratio_s, 2)) %>% left_join(emp, by = "id") %>% dplyr::select(id, species, observed_captures, captures, observed_dead_captures, dead_captures, risk)
+write.csv(tab, file = "sra_ini_risk.csv", row.names = FALSE)
 ```
-
-```{r mcmc_2, fig.cap = "MCMC trace", fig.height = 5}
-#x <- rstan::extract(sra_fit, pars = paste0("traces[", 5:7, "]"), permute = FALSE)
-#
-#dimnames(x) <- list(iteration = 1:dim(x)[1], chain = paste0("chain_", 1:dim(x)[2]), parameter = c("Prob. live capture", "N breeding pairs", "Prob. breeding"))
-#x <- reshape2::melt(x)
-#
-#ggplot(x) + geom_line(aes(iteration, value, col = chain)) + facet_grid(parameter~., scales = "free_y") + theme_bw(base_size = 14) + theme(axis.text.y = element_blank(), axis.title.y = element_blank()) #+ guides(col = "none") + xlab("Iteration")
-```
-
 
