@@ -500,7 +500,7 @@ model {
 generated quantities {
 
   // summary traces
-  vector[7] traces;
+  vector[11] traces;
   
   // Priors for biological parameters
   vector[n_species] prior_n_breeding_pairs_raw_s; 
@@ -548,16 +548,6 @@ generated quantities {
   vector[n_method]        observed_dead_captures_m = rep_vector(0.0, n_method);
   vector[n_fishery_group] observed_dead_captures_g = rep_vector(0.0, n_fishery_group);
   
-  vector[n_species]       captures_s = rep_vector(0.0, n_species);
-  vector[n_method]        captures_m = rep_vector(0.0, n_method);
-  vector[n_fishery_group] captures_g = rep_vector(0.0, n_fishery_group);
-  vector[n_species]       dead_captures_s = rep_vector(0.0, n_species);
-  vector[n_method]        dead_captures_m = rep_vector(0.0, n_method);
-  vector[n_fishery_group] dead_captures_g = rep_vector(0.0, n_fishery_group);
-  
-  vector[n_species]       interactions_s = rep_vector(0.0, n_species);
-  vector[n_method]        interactions_m = rep_vector(0.0, n_method);
-  vector[n_fishery_group] interactions_g = rep_vector(0.0, n_fishery_group);
   vector[n_species]       deaths_s = rep_vector(0.0, n_species);
   vector[n_method]        deaths_m = rep_vector(0.0, n_method);
   vector[n_fishery_group] deaths_g = rep_vector(0.0, n_fishery_group);
@@ -855,7 +845,7 @@ generated quantities {
   for (m in 1:n_method) {
     
     // mean risk accross species weighted by species-specific deaths
-    risk_ratio_m[m] = sum((to_vector(risk_ratio_sm[,m]) .* captures_s) / sum(captures_s));
+    risk_ratio_m[m] = sum((to_vector(risk_ratio_sm[,m]) .* deaths_s) / sum(deaths_s));
   }
   
   // Mortality constraint
@@ -869,5 +859,9 @@ generated quantities {
   traces[5] = vector_norm(append_row(beta_live_capture_g, beta_live_capture_z));
   traces[6] = vector_norm(append_row(append_row(n_breeding_pairs_raw_0, n_breeding_pairs_raw_1), n_breeding_pairs_raw_2));
   traces[7] = vector_norm(p_breeding_raw_s);
+  traces[8] = vector_norm(append_row(adult_survival_opt_raw_0, adult_survival_opt_raw_1));
+  traces[9] = vector_norm(age_breeding_current_raw_s);
+  traces[10] = vector_norm(append_row(egg_survival_mult_raw_s, juv_survival_mult_raw_s));
+  traces[11] = vector_norm(p_net_capture_z);
   
 } // end of generated quantities
