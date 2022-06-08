@@ -125,6 +125,7 @@ data {
   // Observed fishing events
   int<lower=1>                            n_i; 
   int<lower=1,upper=n_month>              month_i[n_i];
+  int<lower=1,upper=n_area>               area_i;
   int<lower=1,upper=n_method>             method_i[n_i]; 
   int<lower=1,upper=n_fishery_group>      fishery_group_i[n_i];
   int<lower=1,upper=n_species>            species_i[n_i];
@@ -144,10 +145,12 @@ data {
   // All fishing events
   int<lower=1>                       n_j; 
   int<lower=1,upper=n_month>         month_j[n_j];
+  int<lower=1,upper=n_area>          area_j;
   int<lower=1,upper=n_method>        method_j[n_j];
   int<lower=1,upper=n_fishery_group> fishery_group_j[n_j];
   int<lower=1,upper=n_species>       species_j[n_j];
   int<lower=1,upper=n_species_group> species_group_j[n_j];
+  int use_net_captures_j[n_j];
   
   // Total density overlap
   vector<lower=0>[n_j] overlap_j;
@@ -829,6 +832,7 @@ generated quantities {
   {
     real density_overlap_j;
     real captures_j;
+    real net_captures_j;
     real deaths_j;
     real observable_deaths_j;
     
