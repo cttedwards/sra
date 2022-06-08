@@ -69,6 +69,7 @@ data {
   // Dimensions
   int n_species;                      // number of species (71)
   int n_month;                        // number of months (12)
+  int n_area;                         // number of areas (for output only)
   int n_method;                       // number of fishing methods (4)
   int n_fishery_group;                // number of fishery groups
   int n_species_group;                // number of species groups
@@ -125,7 +126,6 @@ data {
   // Observed fishing events
   int<lower=1>                            n_i; 
   int<lower=1,upper=n_month>              month_i[n_i];
-  int<lower=1,upper=n_area>               area_i;
   int<lower=1,upper=n_method>             method_i[n_i]; 
   int<lower=1,upper=n_fishery_group>      fishery_group_i[n_i];
   int<lower=1,upper=n_species>            species_i[n_i];
@@ -145,7 +145,7 @@ data {
   // All fishing events
   int<lower=1>                       n_j; 
   int<lower=1,upper=n_month>         month_j[n_j];
-  int<lower=1,upper=n_area>          area_j;
+  int<lower=1,upper=n_area>          area_j[n_j];
   int<lower=1,upper=n_method>        method_j[n_j];
   int<lower=1,upper=n_fishery_group> fishery_group_j[n_j];
   int<lower=1,upper=n_species>       species_j[n_j];
@@ -598,13 +598,16 @@ generated quantities {
   real p_survive = uniform_rng(0, 1);
   
   vector[n_method]        captures_sm[n_species]            = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] captures_sg[n_species]            = rep_array(rep_vector(0.0, n_fishery_group), n_species);
   vector[n_fishery_group] captures_zg[n_species_group]      = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
   vector[n_method]        dead_captures_sm[n_species]       = rep_array(rep_vector(0.0, n_method), n_species);
   vector[n_fishery_group] dead_captures_zg[n_species_group] = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
   
   vector[n_method]        deaths_sm[n_species]                = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] deaths_sg[n_species]                = rep_array(rep_vector(0.0, n_fishery_group), n_species);
   vector[n_fishery_group] deaths_zg[n_species_group]          = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
   vector[n_method]        cryptic_deaths_sm[n_species]        = rep_array(rep_vector(0.0, n_method), n_species);
+  vector[n_fishery_group] cryptic_deaths_sg[n_species]        = rep_array(rep_vector(0.0, n_fishery_group), n_species);
   vector[n_fishery_group] cryptic_deaths_zg[n_species_group]  = rep_array(rep_vector(0.0, n_fishery_group), n_species_group);
   
   // rmax, PST, risk ratio
@@ -847,10 +850,11 @@ generated quantities {
         deaths_j = captures_j * cryptic_multiplier_sg[species_j[j], fishery_group_j[j]];
         
         // observable death
-        observable_deaths_j = captures_j * (1 - p_live_capture_zg[species_group_j[j], fishery_group_j[j]])
+        observable_deaths_j = captures_j * (1 - p_live_capture_zg[species_group_j[j], fishery_group_j[j]]);
         
         // sum captures
         captures_sm[species_j[j], method_j[j]]                         += captures_j;
+        captures_sg[species_j[j], fishery_group_j[j]]                  += captures_j;
         captures_zg[species_group_s[species_j[j]], fishery_group_j[j]] += captures_j;
             
         captures_s[species_j[j]]       += captures_j;
@@ -859,6 +863,7 @@ generated quantities {
 
         // sum deaths
         deaths_sm[species_j[j], method_j[j]]                         += deaths_j;
+        deaths_sg[species_j[j], fishery_group_j[j]]                  += deaths_j;
         deaths_zg[species_group_s[species_j[j]], fishery_group_j[j]] += deaths_j;
 
         deaths_s[species_j[j]]       += deaths_j;
@@ -867,6 +872,7 @@ generated quantities {
 
         // expected cryptic deaths 
         cryptic_deaths_sm[species_j[j], method_j[j]]                         += deaths_j - observable_deaths_j;
+        cryptic_deaths_sg[species_j[j], fishery_group_j[j]]                  += deaths_j - observable_deaths_j;
         cryptic_deaths_zg[species_group_s[species_j[j]], fishery_group_j[j]] += deaths_j - observable_deaths_j;
 
         cryptic_deaths_s[species_j[j]]       += deaths_j - observable_deaths_j;
