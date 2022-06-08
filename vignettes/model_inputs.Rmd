@@ -105,6 +105,8 @@ p_nest <- inputsBio[["p_nest"]]
 p_eez  <- inputsBio[["p_EEZ"]]
 clutch <- inputsBio[["clutch_size"]][,"clutch_size"]
 
+p_survive <- matrix(1.0, nrow = length(species), ncol = length(method))
+
 N_BP   <- N_BP   %>% filter(code_sra %in% species)
 S_curr <- S_curr %>% filter(code_sra %in% species)
 S_opt  <- S_opt  %>% filter(code_sra %in% species)
@@ -214,7 +216,9 @@ sra_dat <- list(n_species = length(species),
             
             n_years = length(fishing_years),
             
-            psi = 1.0)
+            psi = 1.0,
+            
+            lambda_method = 3L)
 ```
 
 ```{r}
