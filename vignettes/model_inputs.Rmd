@@ -105,7 +105,7 @@ p_nest <- inputsBio[["p_nest"]]
 p_eez  <- inputsBio[["p_EEZ"]]
 clutch <- inputsBio[["clutch_size"]][,"clutch_size"]
 
-p_survive <- matrix(1.0, nrow = length(species), ncol = length(method))
+p_survive <- matrix(1.0, nrow = length(species), ncol = length(unique(methods$id_method)))
 
 N_BP   <- N_BP   %>% filter(code_sra %in% species)
 S_curr <- S_curr %>% filter(code_sra %in% species)
@@ -147,6 +147,7 @@ stopifnot(with(tab, !any(value.x > 0 & value.y == 0)))
 # MODEL DATA
 sra_dat <- list(n_species = length(species),
             n_month = 12,
+            n_area = 1L, #length(unique(overlap_t$area));
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
             n_fishery_group = nrow(fishing_groups), 
@@ -208,11 +209,14 @@ sra_dat <- list(n_species = length(species),
                          
             n_j             = nrow(overlap_t),
             month_j         = overlap_t$month,
+            area_j          = rep(1L, nrow(overlap_t)), #overlap_t$area,
             method_j        = overlap_t$id_method,
             fishery_group_j = overlap_t$id_fishing_group,
             species_j       = overlap_t$id_species,
             species_group_j = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
+            
+            use_net_captures_j = overlap_t$use_captures_net,
             
             n_years = length(fishing_years),
             
@@ -267,7 +271,7 @@ usethis::use_data(sra_dat, overwrite = TRUE)
 ```{r, results = 'hide'}
 # Building model ----
 
-sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.2.stan")
+sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.3.stan")
 
 #model <- sra::sra()
 
