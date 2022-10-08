@@ -53,7 +53,7 @@ VERSION <- package_version(scan('../DESCRIPTION',what = character(),skip = 3,nli
 ```
 
 \vfill
-```{r, echo = TRUE, message = FALSE}
+```{r, echo = TRUE, message = TRUE}
 library(sraUtils)
 library(sraInputs)
 
@@ -74,7 +74,7 @@ data("cc_warp")
 data("cc_longline")
 ```
 
-```{r, echo = TRUE, message = FALSE}
+```{r, echo = TRUE, message = TRUE}
 library(sraInputsBio)
 
 data_file <- paste0("inputsBio_v", packageVersion("sraInputsBio"))
@@ -141,13 +141,16 @@ stopifnot(with(tab, !any(value.x > 0 & value.y == 0)))
 
 # check that p_nest == 0 for non-breeding season
 #stopifnot(all(p_nest[breeding == 0] == 0))
+
+# check data are orthogonal
+stopifnot(all(with(overlap_o, table(species, id_method, id_year, month, id_fishing_group)) %in% 0:1))
 ```
 
 ```{r}
 # MODEL DATA
 sra_dat <- list(n_species = length(species),
-            n_month = 12,
-            n_area = 1L, #length(unique(overlap_t$area));
+            n_month = 12L,
+            n_area = 1L,
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
             n_fishery_group = nrow(fishing_groups), 
@@ -205,11 +208,10 @@ sra_dat <- list(n_species = length(species),
             warp_captures_i  = overlap_o$n_captures_warp,
             captures_i       = overlap_o$n_captures,
             use_net_captures_i = overlap_o$use_captures_net,
-            #captures_method_i = overlap_o$n_captures_net + overlap_o$n_captures_warp + overlap_o$n_captures_other;
-                         
+ 
             n_j             = nrow(overlap_t),
             month_j         = overlap_t$month,
-            area_j          = rep(1L, nrow(overlap_t)), #overlap_t$area,
+            area_j          = rep(1L, nrow(overlap_t)),
             method_j        = overlap_t$id_method,
             fishery_group_j = overlap_t$id_fishing_group,
             species_j       = overlap_t$id_species,
@@ -263,9 +265,10 @@ attributes(sra_ini)$version <- VERSION
 
 ```{r}
 # save
-usethis::use_data(methods, overwrite = TRUE)
+usethis::use_data(fishing_years,  overwrite = TRUE)
+usethis::use_data(methods,        overwrite = TRUE)
 usethis::use_data(fishing_groups, overwrite = TRUE)
-usethis::use_data(sra_dat, overwrite = TRUE)
+usethis::use_data(sra_dat,        overwrite = TRUE)
 ```
 
 ```{r, results = 'hide'}
@@ -279,25 +282,25 @@ sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.3.stan")
 
 tmp <- rstan::optimizing(object = sra_mdl, data = sra_dat, init = sra_ini, verbose = TRUE, as_vector = FALSE)
 
-sra_ini$log_q_intercept         <- tmp$par$log_q_intercept
-sra_ini$log_q_method_raw        <- tmp$par$log_q_method_raw
-sra_ini$log_q_species_raw       <- tmp$par$log_q_species_raw
-sra_ini$eps_gs                  <- tmp$par$eps_gs
-sra_ini$beta_live_capture_g     <- tmp$par$beta_live_capture_g
-sra_ini$beta_live_capture_z     <- tmp$par$beta_live_capture_z
-sra_ini$n_breeding_pairs_raw_0  <- structure(tmp$par$n_breeding_pairs_raw_0, dim = sra_dat$n_breeding_pairs_type_0)
-sra_ini$n_breeding_pairs_raw_1  <- structure(tmp$par$n_breeding_pairs_raw_1, dim = sra_dat$n_breeding_pairs_type_1)
-sra_ini$n_breeding_pairs_raw_2  <- structure(tmp$par$n_breeding_pairs_raw_2, dim = sra_dat$n_breeding_pairs_type_2)
-sra_ini$p_breeding_raw_s        <- tmp$par$p_breeding_raw_s
+sra_ini$log_q_intercept           <- tmp$par$log_q_intercept
+sra_ini$log_q_method_raw          <- tmp$par$log_q_method_raw
+sra_ini$log_q_species_raw         <- tmp$par$log_q_species_raw
+sra_ini$eps_gs                    <- tmp$par$eps_gs
+sra_ini$beta_live_capture_g       <- tmp$par$beta_live_capture_g
+sra_ini$beta_live_capture_z       <- tmp$par$beta_live_capture_z
+sra_ini$n_breeding_pairs_raw_0    <- structure(tmp$par$n_breeding_pairs_raw_0, dim = sra_dat$n_breeding_pairs_type_0)
+sra_ini$n_breeding_pairs_raw_1    <- structure(tmp$par$n_breeding_pairs_raw_1, dim = sra_dat$n_breeding_pairs_type_1)
+sra_ini$n_breeding_pairs_raw_2    <- structure(tmp$par$n_breeding_pairs_raw_2, dim = sra_dat$n_breeding_pairs_type_2)
+sra_ini$p_breeding_raw_s          <- tmp$par$p_breeding_raw_s
 sra_ini$adult_survival_opt_raw_0  <- structure(tmp$par$adult_survival_opt_raw_0, dim = sra_dat$adult_survival_opt_type_0)
 sra_ini$adult_survival_opt_raw_1  <- structure(tmp$par$adult_survival_opt_raw_1, dim = sra_dat$adult_survival_opt_type_1)
-sra_ini$egg_survival_mult_raw_s <- tmp$par$egg_survival_mult_raw_s
-sra_ini$juv_survival_mult_raw_s <- tmp$par$juv_survival_mult_raw_s
-sra_ini$p_net_capture_z         <- tmp$par$p_net_capture_z
+sra_ini$egg_survival_mult_raw_s   <- tmp$par$egg_survival_mult_raw_s
+sra_ini$juv_survival_mult_raw_s   <- tmp$par$juv_survival_mult_raw_s
+sra_ini$p_net_capture_z           <- tmp$par$p_net_capture_z
 
 usethis::use_data(sra_ini, overwrite = TRUE)
 
-# Fit initial values ----
+# Plot fit of initial values ----
 
 # Observed vs expected captures
 cdat1 <- data.frame(obs = sra_dat$live_captures_i, var_id = 1:sra_dat$n_i, species = sra_dat$species_i)
@@ -327,20 +330,35 @@ df1 <- rbind(clive2, cdead2) %>%
 
 stopifnot(sum(df1$obs) == sum(cdat1$obs) + sum(cdat2$obs))
 
-gg <- ggplot(data = df1, aes(x = obs, y = hat)) +
+#gg <- ggplot(data = df1, aes(x = obs, y = hat)) +
+#  geom_point(size = 3) +
+#  geom_abline(slope = 1) +
+#  facet_wrap(grp ~ ., ncol = 1) +
+#  theme_bw() +
+#  labs(x = "Observed number of captures", y = "Predicted number of captures", colour = NULL) +
+#  theme(aspect.ratio = 1)
+#ggsave(gg, filename = "sra_ini_fit.png")
+
+rm(cdead2, cdead1, clive2, clive1, cdat1, cdat2)
+```
+
+```{r}
+ggplot(data = df1, aes(x = obs, y = hat)) +
   geom_point(size = 3) +
   geom_abline(slope = 1) +
   facet_wrap(grp ~ ., ncol = 1) +
   theme_bw() +
   labs(x = "Observed number of captures", y = "Predicted number of captures", colour = NULL) +
   theme(aspect.ratio = 1)
-ggsave(gg, filename = "sra_ini_fit.png")
+```
 
-rm(gg, df1, cdead2, cdead1, clive2, clive1, cdat1, cdat2)
 
+```{r}
 # Print initial deaths and captures
 emp <- data.frame(id = sra_dat$species_i, captures = sra_dat$captures_i, dead_captures = sra_dat$dead_captures_i) %>% group_by(id) %>% summarise(observed_captures = sum(captures), observed_dead_captures = sum(dead_captures))
-tab <- data.frame(id = 1:71, species = species_groups$common_name, captures = round(tmp$par$observed_captures_s), dead_captures = round(tmp$par$observed_dead_captures_s), risk = round(tmp$par$risk_ratio_s, 2)) %>% left_join(emp, by = "id") %>% dplyr::select(id, species, observed_captures, captures, observed_dead_captures, dead_captures, risk)
-write.csv(tab, file = "sra_ini_risk.csv", row.names = FALSE)
+tab <- data.frame(id = 1:71, species = species_groups$common_name, predicted_captures = round(tmp$par$observed_captures_s), predicted_dead_captures = round(tmp$par$observed_dead_captures_s), risk = round(tmp$par$risk_ratio_s, 2)) %>% left_join(emp, by = "id") %>% dplyr::select(id, species, observed_captures, predicted_captures, observed_dead_captures, predicted_dead_captures, risk)
+#write.csv(tab, file = "sra_ini_risk.csv", row.names = FALSE)
+
+knitr::kable(tab)
 ```
 
