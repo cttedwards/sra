@@ -208,8 +208,8 @@ parameters {
   
   // Distribution of trawl captures across capture types
   // per capture type group
-  vector<lower=0,upper=1>[n_species_group]   p_net_capture_z;
-  vector<lower=0,upper=1>[sum(idx_trawl_fg)] p_net_capture_g;
+  vector[n_species_group]   p_net_capture_z;
+  vector[sum(idx_trawl_fg)] p_net_capture_g;
   
   vector<lower=1>[n_species] lambda_max[3];
   
