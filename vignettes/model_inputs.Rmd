@@ -61,7 +61,7 @@ data("methods")
 data("fishing_groups")
 data("fishing_group_definitions")
 
-data("fishing_years")
+data("fishing_years_risk")
 
 data("species")
 data("species_groups")
@@ -143,7 +143,8 @@ stopifnot(with(tab, !any(value.x > 0 & value.y == 0)))
 #stopifnot(all(p_nest[breeding == 0] == 0))
 
 # check data are orthogonal
-stopifnot(all(with(overlap_o, table(species, id_method, id_year, month, id_fishing_group)) %in% 0:1))
+stopifnot(all(with(overlap_o, table(species, id_method, month, id_fishing_group)) %in% 0:1))
+stopifnot(all(with(overlap_t, table(species, id_method, month, id_fishing_group)) %in% 0:1))
 ```
 
 ```{r}
@@ -220,7 +221,7 @@ sra_dat <- list(n_species = length(species),
             
             use_net_captures_j = overlap_t$use_captures_net,
             
-            n_years = length(fishing_years),
+            n_years = length(fishing_years_risk),
             
             psi = 1.0,
             
@@ -265,7 +266,6 @@ attributes(sra_ini)$version <- VERSION
 
 ```{r}
 # save
-usethis::use_data(fishing_years,  overwrite = TRUE)
 usethis::use_data(methods,        overwrite = TRUE)
 usethis::use_data(fishing_groups, overwrite = TRUE)
 usethis::use_data(sra_dat,        overwrite = TRUE)
@@ -356,7 +356,7 @@ ggplot(data = df1, aes(x = obs, y = hat)) +
 ```{r}
 # Print initial deaths and captures
 emp <- data.frame(id = sra_dat$species_i, captures = sra_dat$captures_i, dead_captures = sra_dat$dead_captures_i) %>% group_by(id) %>% summarise(observed_captures = sum(captures), observed_dead_captures = sum(dead_captures))
-tab <- data.frame(id = 1:71, species = species_groups$common_name, predicted_captures = round(tmp$par$observed_captures_s), predicted_dead_captures = round(tmp$par$observed_dead_captures_s), risk = round(tmp$par$risk_ratio_s, 2)) %>% left_join(emp, by = "id") %>% dplyr::select(id, species, observed_captures, predicted_captures, observed_dead_captures, predicted_dead_captures, risk)
+tab <- data.frame(id = 1:71, species = species_groups$code_sra, predicted_captures = round(tmp$par$observed_captures_s), predicted_dead_captures = round(tmp$par$observed_dead_captures_s), risk = format(signif(tmp$par$risk_ratio_s, 2), nsmall = 2)) %>% left_join(emp, by = "id") %>% dplyr::select(species, observed_captures, predicted_captures, observed_dead_captures, predicted_dead_captures, risk)
 #write.csv(tab, file = "sra_ini_risk.csv", row.names = FALSE)
 
 knitr::kable(tab)
