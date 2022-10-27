@@ -258,8 +258,8 @@ sra_ini <- list(log_q_intercept = rep(-10, sra_dat$n_method),
                 egg_survival_mult_raw_s = rep(0.7, sra_dat$n_species),
                 juv_survival_mult_raw_s = rep(0.7, sra_dat$n_species),
                 age_breeding_current_raw_s = rep(0.5, sra_dat$n_species),
-                p_net_capture_z = rep(0.5, sra_dat$n_species_group),
-                p_net_capture_g = rep(0.5, sum(sra_dat$idx_trawl_fg)))
+                p_net_capture_z = rep(0.0, sra_dat$n_species_group),
+                p_net_capture_g = rep(0.0, sum(sra_dat$idx_trawl_fg)))
 ```
 
 ```{r}
