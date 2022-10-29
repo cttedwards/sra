@@ -150,7 +150,7 @@ data {
   int<lower=1,upper=n_fishery_group> fishery_group_j[n_j];
   int<lower=1,upper=n_species>       species_j[n_j];
   int<lower=1,upper=n_species_group> species_group_j[n_j];
-  int use_net_captures_j[n_j];
+  //int use_net_captures_j[n_j];
   
   // Total density overlap
   vector<lower=0>[n_j] overlap_j;
