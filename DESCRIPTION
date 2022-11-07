@@ -1,8 +1,8 @@
 Package: sra
 Type: Package
 Title: Seabird Risk Assessment
-Version: 0.1.11
-Date: 2022-10-29
+Version: 0.2.3
+Date: 2022-11-07
 Author: Charles T T Edwards <cescapecs@gmail.com>
 Maintainer: Charles T T Edwards <cescapecs@gmail.com>
 Description: Seabird Risk Assessment
