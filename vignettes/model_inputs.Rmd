@@ -148,23 +148,13 @@ stopifnot(all(with(overlap_t, table(species, id_method, month, id_fishing_group)
 ```
 
 ```{r}
-# use net captures from recent fishery groups only
-#use_net_capture_groups <- c(19, 21, 23, 25, 27, 28, 29, 31, 33)
-#
-#overlap_o <- overlap_o %>% mutate(use_captures_net = case_when(use_captures_net == 1 & !(id_fishing_group %in% use_net_capture_groups) ~ -1L, TRUE ~ use_captures_net))
-#
-# check this one
-#overlap_o %>% filter(id_fishing_group == 28 & n_captures_net > 0)
-```
-
-```{r}
 # MODEL DATA
 sra_dat <- list(n_species = length(species),
             n_month = 12L,
             n_area = 1L,
             n_method = nrow(methods),
             n_species_group = length(unique(species_groups$species_group)),
-            n_fishery_group = nrow(fishing_groups), 
+            n_fishery_group = length(unique(fishing_groups$id_fishing_group)), 
             n_fishery_group_m = as.integer(table(fishing_groups$method)),
             n_net_group = length(unique(cc_warp$par1)),
             
@@ -172,7 +162,6 @@ sra_dat <- list(n_species = length(species),
             
             idx_method_fg = fishing_groups$id_method,
             idx_net_to_species = match(cc_warp$par1, unique(cc_warp$par1)),
-            #idx_trawl_fg  = ifelse(fishing_groups$id_method == 4, 1, 0),
             
             cc_longline_par1 = cc_longline$par1,
             cc_longline_par2 = cc_longline$par2,
@@ -231,8 +220,6 @@ sra_dat <- list(n_species = length(species),
             species_j       = overlap_t$id_species,
             species_group_j = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
-            
-            #use_net_captures_j = overlap_t$use_captures_net,
             
             n_years = length(fishing_years_risk),
             
