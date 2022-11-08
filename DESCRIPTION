@@ -1,8 +1,8 @@
 Package: sra
 Type: Package
 Title: Seabird Risk Assessment
-Version: 0.2.3
-Date: 2022-11-07
+Version: 0.2.4
+Date: 2022-11-08
 Author: Charles T T Edwards <cescapecs@gmail.com>
 Maintainer: Charles T T Edwards <cescapecs@gmail.com>
 Description: Seabird Risk Assessment
@@ -18,7 +18,7 @@ Suggests:
     knitr (>= 1.31),
     testthat (>= 3.0.0),
     sraUtils (>= 1.0.0),
-    sraInputs (>= 0.2.0),
+    sraInputs (>= 1.0.0),
     sraInputsBio (>= 0.1.0)
 Collate: 
     'sra.R'
