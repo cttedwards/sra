@@ -1,3 +1,5 @@
 ^data-raw$
-^vignettes/make_inputs_species.Rmd
+^data-v0.1.0$
+^vignettes/sensitivity/model_inputs_sensitivity.R
+
 

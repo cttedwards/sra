@@ -582,6 +582,7 @@ generated quantities {
   matrix[n_species_group, n_method]        cryptic_multiplier_zm = rep_matrix(0.0, n_species_group, n_method);
 
   // Captures and deaths
+  // (observed)
   vector[n_species]       observed_captures_s = rep_vector(0.0, n_species);
   vector[n_method]        observed_captures_m = rep_vector(0.0, n_method);
   vector[n_fishery_group] observed_captures_g = rep_vector(0.0, n_fishery_group);
@@ -592,6 +593,7 @@ generated quantities {
   vector[n_method]        observed_dead_captures_m = rep_vector(0.0, n_method);
   vector[n_fishery_group] observed_dead_captures_g = rep_vector(0.0, n_fishery_group);
   
+  // (observable)
   vector[n_species]       captures_s = rep_vector(0.0, n_species);
   vector[n_method]        captures_m = rep_vector(0.0, n_method);
   vector[n_fishery_group] captures_g = rep_vector(0.0, n_fishery_group);
