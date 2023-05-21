@@ -220,6 +220,7 @@ sra_dat <- list(n_species = length(species),
             species_j       = overlap_t$id_species,
             species_group_j = overlap_t$id_species_group,
             overlap_j       = overlap_t$overlap,
+            use_net_captures_j = overlap_t$use_captures_net,
             
             n_years = length(fishing_years_risk),
             
@@ -276,7 +277,7 @@ usethis::use_data(sra_dat,        overwrite = TRUE)
 ```{r, results = 'hide'}
 # Building model ----
 
-sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.6.stan")
+sra_mdl <- rstan::stan_model(file = "../inst/extdata/stan/sra_v0.0.7.stan")
 
 #model <- sra::sra()
 
